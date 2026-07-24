@@ -25,12 +25,14 @@ const configExample = `{
     "enabled": true,
     "releaseType": "Release",
     "source": "appJson",
-    "applyTo": "changedOnly"
+    "applyTo": "changedOnly",
+    "includeDependencies": true,
+    "dependencyUpdateScope": "directlyChanged"
   },
   "changeDetection": {
     "mode": "git",
-    "base": "latest:v*",
-    "includeDependencies": true
+    "base": "latest-merge:version-increase",
+    "includeDependents": true
   },
   "apps": [
     { "id": "Broker", "path": "./Broker" }
@@ -124,8 +126,8 @@ alwasp restore \\
 
       <section class="rounded-lg border border-ink-200 bg-white p-6 shadow-sm">
         <h2 class="text-xl font-semibold text-ink-900">Permanent version application</h2>
-        <p class="mt-2 text-sm leading-6 text-ink-700">Run this before your pipeline commits and tags calculated versions. ALWasp only writes `app.json`; git remains external.</p>
-        <pre class="mt-5 overflow-x-auto rounded-lg bg-ink-900 p-4 text-sm leading-6 text-ink-50"><code>{`alwasp version apply release --changed-since latest:v*
+        <p class="mt-2 text-sm leading-6 text-ink-700">Run this before your pipeline commits and tags calculated project and internal dependency versions. ALWasp only writes `app.json`; git remains external.</p>
+        <pre class="mt-5 overflow-x-auto rounded-lg bg-ink-900 p-4 text-sm leading-6 text-ink-50"><code>{`alwasp version apply release --changed-since "latest-merge:version-increase"
 git diff -- */app.json
 git commit -am "Apply AL app versions"
 git tag v2026.6.0`}</code></pre>

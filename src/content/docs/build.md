@@ -31,11 +31,14 @@ Config-driven `build` can temporarily patch selected projects before compilation
 | Feature | Written to app.json |
 |---|---|
 | Versioning | `version` |
+| Internal dependency versioning | Matching `dependencies[].version` values |
 | Resource exposure | `resourceExposurePolicy` |
 | Application Insights | `applicationInsightsConnectionString` or `applicationInsightsKey` |
 | Preprocessor symbols | `preprocessorSymbols` |
 
 Before modifying, ALWasp backs up `app.json` to `app.json.alwasp.bak`. It restores the original file in a `finally` block even when the build fails. A stale backup from an interrupted run is recovered before future builds or version application.
+
+Version-only changes are applied surgically: ALWasp replaces only the relevant top-level `version` and internal dependency `version` values. Unrelated content, comments, indentation, line endings, Unicode, and escaped characters remain unchanged. Internal dependencies are matched by app GUID; external packages are never modified.
 
 Config-driven `defines` are written per project into `app.json` `preprocessorSymbols` and unioned with symbols already present in the source file. This avoids workspace-wide `/define` arguments and allows projects with different define sets to stay in the same compile group when the rest of their compiler settings match.
 
@@ -55,7 +58,7 @@ Config-driven `defines` are written per project into `app.json` `preprocessorSym
 
 ## Manifests
 
-Config-driven builds can write a structured manifest with selected projects, groups, effective settings, diagnostics, timestamps, and per-project transformation traceability.
+Config-driven builds can write a structured manifest with selected projects, groups, effective settings, diagnostics, timestamps, and per-project transformation traceability. Each project records its original and effective version plus `internalDependencyVersions`, which lists every internal dependency version applied for that build without exposing unrelated package data.
 
 ```bash
 alwasp build ci --manifest output/build-manifest.json

@@ -197,8 +197,12 @@ Key choices:
 - `fallbackToAppJson`: when `source` is `nuget`, use the current `app.json` version if no published package is found.
 - `releaseType`: `Release`, `Preview`, `Hotfix`, or `None`.
 - `applyTo`: `all` or `changedOnly`.
+- `includeDependencies`: update internal dependency entries to the calculated versions of selected projects; defaults to `true`.
+- `dependencyUpdateScope`: `directlyChanged` (default) updates references only to dependency projects changed directly in git; `allVersioned` propagates every selected calculated version.
 
 Set it at the top level for all profiles, or override individual fields per profile.
+
+Internal dependencies are matched by app GUID, so similarly named external packages are never changed. During `build`, dependency versions are temporary and the original `app.json` files are restored. During `version apply`, both the calculated project version and eligible internal dependency versions are written permanently.
 
 ### `resourceExposurePolicy`
 
@@ -234,9 +238,13 @@ Maps local git diffs to configured projects.
 Common fields:
 
 - `mode`: `git` to enable for every run, or `none` to enable only when `--changed-since` is passed.
-- `base`: `latest`, `latest:<glob>`, or an explicit tag, branch, or commit.
+- `base`: `latest`, `latest:<glob>`, `latest-merge:<text>`, or an explicit tag, branch, or commit.
 - `head`: defaults to `HEAD`.
-- `includeDependencies`: when `true`, also marks transitive dependents as changed.
+- `includeDependents`: when `true` (the default), also marks transitive dependents as changed.
+
+`latest-merge:<text>` selects the nearest merge commit on `head`'s first-parent history whose commit message contains the supplied text. This is useful when a release merge, rather than its earlier release tag, should begin the next change-detection cycle. The local checkout must contain enough history to reach the merge.
+
+`changeDetection.includeDependencies` remains accepted as a deprecated alias for `includeDependents`. Use `includeDependents` in new and updated configurations; it wins if both names are present.
 
 ## Validate
 

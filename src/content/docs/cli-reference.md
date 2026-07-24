@@ -89,9 +89,12 @@ Exits `0` when valid and `1` when errors are found.
 alwasp version apply [targetOrProfile]
 alwasp version apply --profile appsource
 alwasp version apply --changed-since latest:v*
+alwasp version apply --changed-since "latest-merge:version-increase"
 ```
 
-Permanently writes calculated versions to selected projects' `app.json` files. It does not restore, compile, commit, tag, or push.
+Permanently writes calculated versions and configured internal dependency version updates to selected projects' `app.json` files. It does not restore, compile, commit, tag, or push.
+
+Both `build --changed-since` and `version apply --changed-since` accept `latest`, `latest:<glob>`, `latest-merge:<text>`, or an explicit tag, branch, or commit. `latest-merge` searches the head's first-parent history for the nearest matching merge message.
 
 ## compare
 

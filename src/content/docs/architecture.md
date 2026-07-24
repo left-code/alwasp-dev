@@ -16,6 +16,7 @@ Program.cs
 ├── ConfigBuildProjectPlanner
 ├── AppJsonTransformer
 ├── AppVersionResolver / AppVersionCalculator
+├── InternalDependencyVersionPlanner
 ├── ApplicationInsightsResolver
 ├── ChangeDetectionResolver / GitChangeDetector
 ├── ConfigBuildManifestWriter
@@ -45,7 +46,7 @@ Workspace restore aggregates dependencies across all workspace projects, emits i
 3. Validate paths and output locations
 4. Recover stale `app.json.alwasp.bak` files
 5. Resolve change detection through local git
-6. Plan versioning, Application Insights, resource exposure, and preprocessor symbol changes
+6. Plan project versions, internal dependency versions, Application Insights, resource exposure, and preprocessor symbol changes
 7. Run restore for selected projects
 8. Temporarily patch required `app.json` files
 9. Compile grouped temporary workspaces
@@ -54,7 +55,9 @@ Workspace restore aggregates dependencies across all workspace projects, emits i
 
 ## Version apply pipeline
 
-`alwasp version apply` shares the same selection, validation, change detection, and version planning code as config-driven build. It differs in one critical way: it permanently writes the calculated `version` to `app.json` and does not restore, compile, or touch git.
+`alwasp version apply` shares the same selection, validation, change detection, project-version, and internal-dependency planning code as config-driven build. It permanently writes the calculated top-level `version` and eligible internal `dependencies[].version` values to `app.json`; it does not restore, compile, or touch git.
+
+`InternalDependencyVersionPlanner` matches selected projects by app GUID and controls propagation through `dependencyUpdateScope`. External dependencies are excluded. The transformer performs targeted text replacements so version application preserves unrelated JSON text exactly.
 
 ## Compatibility pipelines
 

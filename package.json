@@ -1,12 +1,17 @@
 {
   "name": "alwasp-docs-site",
-  "version": "0.1.0",
+  "version": "0.1.0-preview.13",
+  "private": true,
   "type": "module",
   "license": "MIT",
   "homepage": "https://alwasp.dev",
   "repository": {
     "type": "git",
     "url": "https://github.com/left-code/alwasp-dev.git"
+  },
+  "engines": {
+    "node": "18.20.8 || ^20.3.0 || >=22.0.0",
+    "npm": ">=9.6.5"
   },
   "scripts": {
     "dev": "astro dev",

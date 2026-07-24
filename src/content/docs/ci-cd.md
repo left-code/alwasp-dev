@@ -85,9 +85,18 @@ Use local git refs to restrict versioning:
 ```bash
 alwasp build ci --changed-since latest
 alwasp build ci --changed-since latest:v*
+alwasp build ci --changed-since "latest-merge:version-increase"
 ```
 
-ALWasp does not fetch refs. Make sure your pipeline checks out the tags or branches that `--changed-since` needs.
+`latest-merge:<text>` searches the configured head's first-parent history for the nearest merge commit whose message contains the text. It is useful when a version-increase or release merge should be the baseline for the next cycle even though the release tag points to an earlier commit.
+
+ALWasp does not fetch refs or history. Make sure your pipeline checks out the tags, branches, and commits that `--changed-since` needs. For GitHub Actions, use `fetch-depth: 0` when using tag or merge-history baselines:
+
+```yaml
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+```
 
 ## Permanent version updates
 
@@ -97,7 +106,9 @@ Use `version apply` as a separate step when you want version changes committed b
 alwasp version apply release --changed-since latest:v*
 ```
 
-ALWasp writes the files only. Your pipeline owns `git commit`, tags, and push.
+ALWasp writes the calculated project versions and eligible internal dependency versions to `app.json`. Your pipeline owns `git commit`, tags, and push.
+
+With `versioning.includeDependencies: true` (the default), dependencies on selected internal projects are updated by app GUID. The default `dependencyUpdateScope: directlyChanged` propagates only versions of projects changed directly in git; use `allVersioned` when versions assigned to dependents should cascade through the whole selected graph.
 
 ## Compatibility gates
 
