@@ -1,0 +1,291 @@
+---
+import BaseLayout from "@layouts/BaseLayout.astro";
+
+const commandGroups = [
+  {
+    eyebrow: "Start",
+    title: "Set up a repository",
+    tone: "border-wasp-300 bg-wasp-100/70",
+    commands: [
+      ["Install", "dotnet tool install --global left-code.AlWasp"],
+      ["Discover projects", "alwasp init"],
+      ["Validate config", "alwasp config validate"],
+      ["Build default target", "alwasp build"]
+    ]
+  },
+  {
+    eyebrow: "Build",
+    title: "Compile with intent",
+    tone: "border-mint-500 bg-mint-100/70",
+    commands: [
+      ["Target or profile", "alwasp build ci"],
+      ["One profile", "alwasp build --profile appsource"],
+      ["Changed projects", "alwasp build ci --changed-since latest:v*"],
+      ["Write manifest", "alwasp build ci --manifest output/build.json"]
+    ]
+  },
+  {
+    eyebrow: "Maintain",
+    title: "Versions and tools",
+    tone: "border-ink-500 bg-ink-100",
+    commands: [
+      ["Apply versions", "alwasp version apply release"],
+      ["Check AL tools", "alwasp tools update --check"],
+      ["Update AL tools", "alwasp tools update --clean"],
+      ["Fresh package ID", "alwasp app set-package-id MyApp.app"]
+    ]
+  }
+];
+
+const changeRefs = [
+  ["latest", "Newest local tag"],
+  ["latest:v*", "Newest local tag matching a glob"],
+  ["latest-merge:<text>", "Nearest matching first-parent merge"],
+  ["<git-ref>", "Explicit tag, branch, or commit"]
+];
+---
+
+<BaseLayout title="Cheatsheet" description="A compact visual reference for ALWasp commands, configuration, versioning, restore, compatibility, and CI workflows.">
+  <main class="pb-16">
+    <section class="relative overflow-hidden border-b border-ink-900 bg-ink-900 text-white">
+      <div class="pointer-events-none absolute -right-24 -top-32 h-80 w-80 rounded-full border-[48px] border-wasp-300/15"></div>
+      <div class="pointer-events-none absolute -bottom-24 left-1/3 h-48 w-48 rotate-12 rounded-[2.5rem] bg-mint-500/10"></div>
+      <div class="relative mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-8 lg:py-16">
+        <div class="max-w-4xl">
+          <div class="flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-wasp-300">
+            <span>ALWasp field guide</span>
+            <span class="h-px w-12 bg-wasp-300/60"></span>
+            <span class="text-ink-200">v0.1.0-preview.13</span>
+          </div>
+          <h1 class="mt-5 text-4xl font-semibold tracking-tight sm:text-6xl">Build AL without breaking your flow.</h1>
+          <p class="mt-5 max-w-3xl text-lg leading-8 text-ink-200">
+            The commands, config decisions, release clock, and CI signals worth keeping within arm’s reach.
+          </p>
+          <div class="cheatsheet-actions mt-8 flex flex-wrap gap-3">
+            <a href="#commands" class="rounded-md bg-wasp-300 px-4 py-2.5 text-sm font-semibold text-ink-900 transition hover:bg-wasp-100">Jump to commands</a>
+            <button type="button" data-print class="rounded-md border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10">Print cheatsheet</button>
+          </div>
+        </div>
+
+        <div class="self-end rounded-xl border border-white/10 bg-white/5 p-5 shadow-soft backdrop-blur">
+          <div class="flex items-center justify-between border-b border-white/10 pb-3">
+            <span class="text-xs font-semibold uppercase tracking-[0.18em] text-ink-200">Fast path</span>
+            <span class="rounded-full bg-mint-500/20 px-2.5 py-1 text-xs font-semibold text-mint-100">4 steps</span>
+          </div>
+          <ol class="mt-4 space-y-3 font-mono text-sm">
+            <li><span class="mr-3 text-wasp-300">01</span>alwasp init</li>
+            <li><span class="mr-3 text-wasp-300">02</span>alwasp config validate</li>
+            <li><span class="mr-3 text-wasp-300">03</span>alwasp build ci</li>
+            <li><span class="mr-3 text-wasp-300">04</span>alwasp validate compatibility</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <nav class="cheatsheet-nav sticky top-[65px] z-30 border-b border-ink-200 bg-ink-50/95 backdrop-blur" aria-label="Cheatsheet sections">
+      <div class="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 py-2 sm:px-6 lg:px-8">
+        {[
+          ["#commands", "Commands"],
+          ["#config", "Config"],
+          ["#changes", "Git changes"],
+          ["#versions", "Versions"],
+          ["#compatibility", "Compatibility"],
+          ["#signals", "CI signals"]
+        ].map(([href, label]) => (
+          <a href={href} class="shrink-0 rounded-md px-3 py-2 text-sm font-semibold text-ink-700 hover:bg-white hover:text-ink-900">{label}</a>
+        ))}
+      </div>
+    </nav>
+
+    <div class="mx-auto max-w-7xl space-y-10 px-4 py-10 sm:px-6 lg:px-8">
+      <section id="commands" class="scroll-mt-32">
+        <div class="mb-5 flex items-end justify-between gap-4">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-wasp-700">01 / Commands</p>
+            <h2 class="mt-2 text-3xl font-semibold tracking-tight text-ink-900">The working set</h2>
+          </div>
+          <a href="/docs/cli-reference/" class="hidden text-sm font-semibold text-mint-700 hover:underline sm:block">Full CLI reference →</a>
+        </div>
+        <div class="grid gap-4 lg:grid-cols-3">
+          {commandGroups.map((group) => (
+            <article class={`rounded-xl border-t-4 p-5 shadow-sm ${group.tone}`}>
+              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-ink-500">{group.eyebrow}</p>
+              <h3 class="mt-1 text-xl font-semibold text-ink-900">{group.title}</h3>
+              <dl class="mt-5 space-y-4">
+                {group.commands.map(([label, command]) => (
+                  <div>
+                    <dt class="mb-1 text-xs font-medium text-ink-500">{label}</dt>
+                    <dd class="overflow-x-auto rounded-md bg-ink-900 px-3 py-2 font-mono text-[12px] leading-5 text-ink-50">{command}</dd>
+                  </div>
+                ))}
+              </dl>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section id="config" class="scroll-mt-32 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+        <article class="overflow-hidden rounded-xl border border-ink-200 bg-white shadow-sm">
+          <div class="border-b border-ink-200 px-5 py-4">
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-mint-700">02 / Config anatomy</p>
+            <h2 class="mt-2 text-2xl font-semibold text-ink-900">Inventory → profiles → targets</h2>
+          </div>
+          <pre class="overflow-x-auto bg-ink-900 p-5 text-[12px] leading-5 text-ink-50"><code>{`{
+  "$schema": "https://alwasp.dev/schema/alwasp.schema.json",
+  "version": 1,
+  "defaultTarget": "ci",
+  "apps": [{ "id": "Core", "path": "./Core" }],
+  "tests": [{ "id": "CoreTest", "path": "./CoreTest", "app": "Core" }],
+  "profiles": {
+    "appsource": { "include": "apps", "appSourceCop": true },
+    "test": { "include": "tests", "needsProfile": "appsource" }
+  },
+  "targets": { "ci": ["appsource", "test"] }
+}`}</code></pre>
+        </article>
+
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+          <article class="rounded-xl border border-ink-200 bg-white p-5 shadow-sm">
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-wasp-700">Merge order</p>
+            <div class="mt-4 flex flex-wrap items-center gap-2 text-sm font-semibold">
+              <span class="rounded-md bg-ink-100 px-3 py-2">defaults</span><span class="text-ink-500">→</span>
+              <span class="rounded-md bg-wasp-100 px-3 py-2">profile</span><span class="text-ink-500">→</span>
+              <span class="rounded-md bg-mint-100 px-3 py-2">project override</span>
+            </div>
+            <p class="mt-4 text-sm leading-6 text-ink-700">Lists merge. Most strings and booleans use the most specific value.</p>
+          </article>
+          <article class="rounded-xl border border-ink-200 bg-white p-5 shadow-sm">
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-mint-700">Temporary transforms</p>
+            <div class="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-ink-700">
+              {['version', 'dependencies', 'resourceExposurePolicy', 'Application Insights', 'preprocessorSymbols'].map((item) => (
+                <span class="rounded-full border border-ink-200 bg-ink-50 px-3 py-1.5">{item}</span>
+              ))}
+            </div>
+            <p class="mt-4 text-sm leading-6 text-ink-700">Build restores the original <code>app.json</code>. <code>version apply</code> writes version changes permanently.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="grid gap-5 xl:grid-cols-2">
+        <article id="changes" class="scroll-mt-32 rounded-xl border border-ink-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-mint-700">03 / Git changes</p>
+          <h2 class="mt-2 text-2xl font-semibold text-ink-900">Choose a baseline</h2>
+          <div class="mt-5 divide-y divide-ink-200 border-y border-ink-200">
+            {changeRefs.map(([ref, description]) => (
+              <div class="grid gap-1 py-3 sm:grid-cols-[190px_1fr] sm:items-center">
+                <code class="font-mono text-sm font-semibold text-ink-900">{ref}</code>
+                <span class="text-sm text-ink-700">{description}</span>
+              </div>
+            ))}
+          </div>
+          <div class="mt-4 rounded-lg border-l-4 border-wasp-300 bg-wasp-100/60 p-4 text-sm leading-6 text-ink-700">
+            Use <code>includeDependents: true</code> to expand downstream. The older <code>changeDetection.includeDependencies</code> name is deprecated.
+          </div>
+        </article>
+
+        <article id="versions" class="scroll-mt-32 overflow-hidden rounded-xl border border-ink-200 bg-ink-900 text-white shadow-sm">
+          <div class="p-5">
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-wasp-300">04 / Release clock</p>
+            <h2 class="mt-2 text-2xl font-semibold">Friday nearest the 15th</h2>
+            <p class="mt-2 text-sm leading-6 text-ink-200">The switch is inclusive. Repeated calculations in the same target month increment the build number.</p>
+          </div>
+          <div class="grid grid-cols-[1fr_1fr_1fr] border-t border-white/10 text-sm">
+            <div class="bg-white/5 p-3 font-semibold text-ink-200">When</div>
+            <div class="bg-white/5 p-3 font-semibold text-ink-200">Release</div>
+            <div class="bg-white/5 p-3 font-semibold text-ink-200">Preview</div>
+            <div class="border-t border-white/10 p-3">Before</div>
+            <div class="border-t border-white/10 p-3 text-wasp-300">Previous month</div>
+            <div class="border-t border-white/10 p-3 text-mint-100">Current month</div>
+            <div class="border-t border-white/10 p-3">On / after</div>
+            <div class="border-t border-white/10 p-3 text-wasp-300">Current month</div>
+            <div class="border-t border-white/10 p-3 text-mint-100">Next month</div>
+          </div>
+          <p class="border-t border-white/10 px-5 py-4 text-xs text-ink-200"><code>Hotfix</code> was removed; repeated <code>Release</code> calculations cover that workflow.</p>
+        </article>
+      </section>
+
+      <section id="compatibility" class="scroll-mt-32">
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-wasp-700">05 / Compatibility</p>
+        <h2 class="mt-2 text-3xl font-semibold tracking-tight text-ink-900">Two gates, different jobs</h2>
+        <div class="mt-5 grid gap-4 lg:grid-cols-2">
+          <article class="rounded-xl border border-ink-200 bg-white p-5 shadow-sm">
+            <div class="flex items-center justify-between gap-4">
+              <h3 class="text-xl font-semibold text-ink-900">Compare packages</h3>
+              <span class="rounded-full bg-mint-100 px-3 py-1 text-xs font-semibold text-mint-700">No compiler</span>
+            </div>
+            <pre class="mt-4 overflow-x-auto rounded-md bg-ink-900 p-4 text-xs leading-5 text-ink-50"><code>alwasp compare old.app new.app \
+  --json output/compare.json \
+  --fail-on breaking</code></pre>
+            <p class="mt-3 text-sm leading-6 text-ink-700">Fast structural public-symbol comparison between two compiled apps.</p>
+          </article>
+          <article class="rounded-xl border border-ink-200 bg-white p-5 shadow-sm">
+            <div class="flex items-center justify-between gap-4">
+              <h3 class="text-xl font-semibold text-ink-900">Validate source</h3>
+              <span class="rounded-full bg-wasp-100 px-3 py-1 text-xs font-semibold text-wasp-700">AppSourceCop</span>
+            </div>
+            <pre class="mt-4 overflow-x-auto rounded-md bg-ink-900 p-4 text-xs leading-5 text-ink-50"><code>alwasp validate compatibility \
+  --project-root ./src \
+  --baseline-directory ./latest</code></pre>
+            <p class="mt-3 text-sm leading-6 text-ink-700">Recompiles current source against historical packages and validates in dependency order.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="signals" class="scroll-mt-32 grid gap-5 lg:grid-cols-3">
+        <article class="rounded-xl border border-ink-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-mint-700">Authentication</p>
+          <h2 class="mt-2 text-xl font-semibold text-ink-900">Private feeds</h2>
+          <dl class="mt-4 space-y-3 text-sm">
+            <div><dt class="font-mono font-semibold text-ink-900">ALWASP_PAT</dt><dd class="mt-1 text-ink-700">Fallback token for authenticated feeds</dd></div>
+            <div><dt class="font-mono font-semibold text-ink-900">--feed-token-env</dt><dd class="mt-1 text-ink-700">Per-feed <code>URL=ENV_VAR</code> mapping</dd></div>
+            <div><dt class="font-mono font-semibold text-ink-900">--auth-mode</dt><dd class="mt-1 text-ink-700"><code>Auto</code>, <code>Interactive</code>, or <code>NonInteractive</code></dd></div>
+          </dl>
+        </article>
+
+        <article class="rounded-xl border border-ink-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-wasp-700">Outputs</p>
+          <h2 class="mt-2 text-xl font-semibold text-ink-900">Know the artifacts</h2>
+          <dl class="mt-4 space-y-3 text-sm">
+            <div><dt class="font-mono font-semibold text-ink-900">.alpackages/</dt><dd class="mt-1 text-ink-700">Restored symbol packages</dd></div>
+            <div><dt class="font-mono font-semibold text-ink-900">.alwasp-packages</dt><dd class="mt-1 text-ink-700">Incremental restore manifest</dd></div>
+            <div><dt class="font-mono font-semibold text-ink-900">.output/build-manifest.json</dt><dd class="mt-1 text-ink-700">Default requested build manifest</dd></div>
+          </dl>
+        </article>
+
+        <article class="rounded-xl border border-ink-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-ink-500">Exit signals</p>
+          <h2 class="mt-2 text-xl font-semibold text-ink-900">Make CI decisive</h2>
+          <div class="mt-4 grid grid-cols-[48px_1fr] gap-y-3 text-sm">
+            <span class="rounded-md bg-mint-100 px-2 py-1 text-center font-mono font-bold text-mint-700">0</span><span class="self-center pl-3 text-ink-700">Success / no threshold hit</span>
+            <span class="rounded-md bg-wasp-100 px-2 py-1 text-center font-mono font-bold text-wasp-700">1</span><span class="self-center pl-3 text-ink-700">Invalid input or operation failed</span>
+            <span class="rounded-md bg-ink-900 px-2 py-1 text-center font-mono font-bold text-white">2</span><span class="self-center pl-3 text-ink-700">Compare threshold or tool update found</span>
+          </div>
+        </article>
+      </section>
+
+      <footer class="flex flex-col gap-3 border-t border-ink-200 pt-6 text-sm text-ink-500 sm:flex-row sm:items-center sm:justify-between">
+        <span>ALWasp cheatsheet · documentation for v0.1.0-preview.13</span>
+        <div class="flex gap-4 font-semibold">
+          <a href="/docs/getting-started/" class="text-mint-700 hover:underline">Getting started</a>
+          <a href="/examples/" class="text-mint-700 hover:underline">Examples</a>
+        </div>
+      </footer>
+    </div>
+  </main>
+
+  <script>
+    document.querySelector('[data-print]')?.addEventListener('click', () => window.print());
+  </script>
+
+  <style is:global>
+    @media print {
+      @page { margin: 12mm; size: A4 portrait; }
+      header, .cheatsheet-actions, .cheatsheet-nav { display: none !important; }
+      body { background: white !important; }
+      main { padding-bottom: 0 !important; }
+      section, article { break-inside: avoid; }
+      .shadow-sm, .shadow-soft { box-shadow: none !important; }
+      a { text-decoration: none !important; }
+    }
+  </style>
+</BaseLayout>

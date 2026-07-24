@@ -1,24 +1,25 @@
 ---
 const nav = [
   { href: "/", label: "Docs" },
-  { href: "/examples/", label: "Examples" }
+  { href: "/examples/", label: "Examples" },
+  { href: "/cheatsheet/", label: "Cheatsheet" }
 ];
 ---
 
 <header class="sticky top-0 z-40 border-b border-ink-200 bg-white/90 backdrop-blur">
-  <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-    <a href="/" class="flex min-w-0 items-center gap-3">
+  <div class="mx-auto flex max-w-7xl items-center justify-between px-3 py-3 sm:px-6 lg:px-8">
+    <a href="/" class="flex min-w-0 items-center gap-2 sm:gap-3">
       <img src="/icon.png" alt="" class="h-9 w-9 rounded-md" />
       <div class="min-w-0">
         <div class="text-sm font-semibold uppercase tracking-wide text-ink-900">ALWasp</div>
-        <div class="truncate text-xs text-ink-500">Business Central AL build docs</div>
+        <div class="hidden truncate text-xs text-ink-500 sm:block">Business Central AL build docs</div>
       </div>
     </a>
     <nav class="flex items-center gap-1" aria-label="Main navigation">
       {nav.map((item) => (
         <a
           href={item.href}
-          class="rounded-md px-3 py-2 text-sm font-medium text-ink-700 transition hover:bg-ink-100 hover:text-ink-900"
+          class="rounded-md px-2 py-2 text-sm font-medium text-ink-700 transition hover:bg-ink-100 hover:text-ink-900 sm:px-3"
         >
           {item.label}
         </a>
