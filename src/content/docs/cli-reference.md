@@ -94,6 +94,8 @@ alwasp version apply --changed-since "latest-merge:version-increase"
 
 Permanently writes calculated versions and configured internal dependency version updates to selected projects' `app.json` files. It does not restore, compile, commit, tag, or push.
 
+`versioning.releaseType` accepts `Release`, `Preview`, or `None`. Release and Preview periods switch on the Friday closest to the 15th of each month; see [Release and Preview periods](/docs/configuration/#release-and-preview-periods) for the calculation table and boundary example.
+
 Both `build --changed-since` and `version apply --changed-since` accept `latest`, `latest:<glob>`, `latest-merge:<text>`, or an explicit tag, branch, or commit. `latest-merge` searches the head's first-parent history for the nearest matching merge message.
 
 ## compare

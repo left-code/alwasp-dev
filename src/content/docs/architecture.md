@@ -59,6 +59,8 @@ Workspace restore aggregates dependencies across all workspace projects, emits i
 
 `InternalDependencyVersionPlanner` matches selected projects by app GUID and controls propagation through `dependencyUpdateScope`. External dependencies are excluded. The transformer performs targeted text replacements so version application preserves unrelated JSON text exactly.
 
+Release-period planning switches on the Friday closest to the 15th of each month. Before the switch, `Release` targets the previous month and `Preview` the current month; from the switch onward, they target the current and next month respectively. `Hotfix` is no longer a supported release type.
+
 ## Compatibility pipelines
 
 `alwasp compare` reads the NAVX ZIP payload, normalizes public symbols from `SymbolReference.json`, compares baseline/current models, and writes a console or JSON report. It never invokes the compiler.

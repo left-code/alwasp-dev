@@ -213,7 +213,7 @@
         },
         "releaseType": {
           "type": "string",
-          "enum": ["Release", "Preview", "Hotfix", "None"],
+          "enum": ["Release", "Preview", "None"],
           "default": "None",
           "description": "Release type used to compute the new version from the current version and date. 'None' leaves the version unchanged."
         },

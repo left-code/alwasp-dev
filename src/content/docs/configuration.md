@@ -195,7 +195,7 @@ Key choices:
 - `source`: `appJson`, `nuget`, or `explicit`.
 - `explicitVersion`: required when `source` is `explicit`.
 - `fallbackToAppJson`: when `source` is `nuget`, use the current `app.json` version if no published package is found.
-- `releaseType`: `Release`, `Preview`, `Hotfix`, or `None`.
+- `releaseType`: `Release`, `Preview`, or `None`.
 - `applyTo`: `all` or `changedOnly`.
 - `includeDependencies`: update internal dependency entries to the calculated versions of selected projects; defaults to `true`.
 - `dependencyUpdateScope`: `directlyChanged` (default) updates references only to dependency projects changed directly in git; `allVersioned` propagates every selected calculated version.
@@ -203,6 +203,21 @@ Key choices:
 Set it at the top level for all profiles, or override individual fields per profile.
 
 Internal dependencies are matched by app GUID, so similarly named external packages are never changed. During `build`, dependency versions are temporary and the original `app.json` files are restored. During `version apply`, both the calculated project version and eligible internal dependency versions are written permanently.
+
+#### Release and Preview periods
+
+ALWasp uses the Friday closest to the 15th of each month as the release-period switch, and the switch takes effect on that Friday:
+
+| Calculation time | `Release` targets | `Preview` targets |
+|---|---|---|
+| Before the switch Friday | Previous month | Current month |
+| On or after the switch Friday | Current month | Next month |
+
+The resulting version uses the target year and month as its major and minor components. When the current version is already in that target period, ALWasp increments the build component; otherwise, it starts the target period at build `0`. December/January transitions roll the year forward or backward as expected, and `None` leaves the current version unchanged.
+
+For example, in August 2026 the 15th is a Saturday, so the closest Friday is August 14. A `Release` calculation on August 13 still targets July; on August 14 it targets August. A `Preview` calculation switches from August to September on the same date.
+
+The former `Hotfix` release type has been removed. Repeated `Release` calculations within the active release period already increment the build component and cover that workflow.
 
 ### `resourceExposurePolicy`
 
