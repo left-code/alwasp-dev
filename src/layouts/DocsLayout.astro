@@ -1,0 +1,23 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+import DocsSidebar from "@components/DocsSidebar.astro";
+import { getCollection } from "astro:content";
+
+interface Props {
+  title: string;
+  description: string;
+  slug?: string;
+}
+
+const { title, description, slug } = Astro.props;
+const docs = await getCollection("docs");
+---
+
+<BaseLayout title={title} description={description}>
+  <main class="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:px-8">
+    <DocsSidebar docs={docs} currentSlug={slug} />
+    <article class="min-w-0 rounded-lg border border-ink-200 bg-white p-6 shadow-sm sm:p-8">
+      <slot />
+    </article>
+  </main>
+</BaseLayout>

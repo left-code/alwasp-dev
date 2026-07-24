@@ -1,0 +1,661 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/left-code/alwasp/main/schemas/alwasp.schema.json",
+  "title": "alwasp.json",
+  "description": "Configuration file for ALWasp — AL symbol restore and multi-project build orchestration.",
+  "type": "object",
+  "required": ["version"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference."
+    },
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Config schema version. Must be 1."
+    },
+    "defaultTarget": {
+      "type": "string",
+      "description": "Target (or profile) to run when 'alwasp build' is called with no argument."
+    },
+    "tooling": {
+      "$ref": "#/$defs/toolingConfig"
+    },
+    "restore": {
+      "$ref": "#/$defs/restoreConfig"
+    },
+    "workspace": {
+      "$ref": "#/$defs/workspaceConfig"
+    },
+    "versioning": {
+      "$ref": "#/$defs/versioningConfig"
+    },
+    "resourceExposurePolicy": {
+      "$ref": "#/$defs/resourceExposurePolicyConfig"
+    },
+    "applicationInsights": {
+      "$ref": "#/$defs/applicationInsightsConfig"
+    },
+    "changeDetection": {
+      "$ref": "#/$defs/changeDetectionConfig"
+    },
+    "apps": {
+      "type": "array",
+      "description": "Inventory of AL application projects (non-test). Each entry maps an id to a folder path relative to this file.",
+      "items": {
+        "$ref": "#/$defs/appEntry"
+      }
+    },
+    "tests": {
+      "type": "array",
+      "description": "Inventory of AL test projects. Each entry maps an id to a folder path and optionally links it to a parent app. Tests are compiled as artifacts only — execution belongs to BC-DevX or your test runner.",
+      "items": {
+        "$ref": "#/$defs/testEntry"
+      }
+    },
+    "defaults": {
+      "$ref": "#/$defs/defaultsConfig"
+    },
+    "profiles": {
+      "type": "object",
+      "description": "Named build configurations. Each profile selects a set of projects and defines compiler options. Profile names must be unique and must not collide with target names.",
+      "additionalProperties": {
+        "$ref": "#/$defs/profileConfig"
+      }
+    },
+    "targets": {
+      "type": "object",
+      "description": "Named workflow shortcuts. Each target is an ordered list of profile names to execute in sequence. Target names must be unique and must not collide with profile names.",
+      "additionalProperties": {
+        "type": "array",
+        "description": "Ordered list of profile names to run.",
+        "items": {
+          "type": "string"
+        },
+        "minItems": 1
+      }
+    }
+  },
+  "$defs": {
+    "toolingConfig": {
+      "type": "object",
+      "description": "Optional overrides for AL compiler tool paths. By default ALWasp downloads the tools automatically.",
+      "additionalProperties": false,
+      "properties": {
+        "alcPath": {
+          "type": "string",
+          "description": "Absolute or relative path to the 'alc' / 'alc.exe' single-project compiler binary. Overrides the ALC_PATH environment variable."
+        },
+        "altoolPath": {
+          "type": "string",
+          "description": "Absolute or relative path to the 'altool' / 'altool.exe' workspace compiler binary. Overrides the AL_PATH environment variable."
+        }
+      }
+    },
+    "restoreConfig": {
+      "type": "object",
+      "description": "Symbol restore settings applied automatically before each build.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Set to false to skip the automatic restore step before each build. Useful when symbols are pre-populated in CI."
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["Locked", "LatestAll"],
+          "default": "Locked",
+          "description": "Resolve strategy. 'Locked' keeps the highest already-resolved version from the incremental manifest. 'LatestAll' always fetches the latest available version from NuGet."
+        },
+        "packagesFolder": {
+          "type": "string",
+          "default": ".alpackages",
+          "description": "Output folder for downloaded symbol packages. Relative to the alwasp.json directory."
+        },
+        "feeds": {
+          "type": "array",
+          "description": "Additional NuGet feed URLs to search for symbol packages, in addition to the built-in public feeds.",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "nugetConfig": {
+          "type": "string",
+          "description": "Path to a nuget.config file for feed sources and stored credentials. Relative to the alwasp.json directory."
+        },
+        "authMode": {
+          "type": "string",
+          "enum": ["Auto", "Interactive", "NonInteractive"],
+          "default": "Auto",
+          "description": "Authentication mode for private NuGet feeds. 'Auto' chooses NonInteractive in CI environments (CI, TF_BUILD, GITHUB_ACTIONS, BUILD_BUILDID) and Interactive locally. 'Interactive' enables browser/device-code flows via credential providers. 'NonInteractive' suppresses all interactive prompts (sets NUGET_EXE_NO_PROMPT=true)."
+        },
+        "feedTokenEnv": {
+          "type": "array",
+          "description": "Per-feed token environment variable mappings. Each entry has the form 'feedUrl=ENV_VAR'. The environment variable is read at runtime and used as a Bearer token for that feed. Equivalent to --feed-token-env on the CLI.",
+          "items": {
+            "type": "string",
+            "pattern": "^.+=.+$",
+            "description": "Format: 'feedUrl=ENV_VAR_NAME'"
+          }
+        },
+        "country": {
+          "type": "string",
+          "pattern": "^[A-Za-z]{2,5}$",
+          "description": "Optional Business Central localization code for Microsoft symbols, e.g. 'DE'. Localized variants are preferred with an unlocalized fallback. Omit or use 'W1' to prefer unlocalized/W1 packages."
+        }
+      }
+    },
+    "workspaceConfig": {
+      "type": "object",
+      "description": "Workspace-level settings shared across all build groups within a config-driven build.",
+      "additionalProperties": false,
+      "properties": {
+        "root": {
+          "type": "string",
+          "default": ".",
+          "description": "Root directory for the workspace. Currently informational."
+        },
+        "maxCpuCount": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum number of AL projects compiled concurrently by 'altool workspace compile'. Defaults to the number of logical processors."
+        },
+        "logDirectory": {
+          "type": "string",
+          "description": "Directory where altool writes compiler log files. When set, ALWasp creates per-profile and per-group subfolders automatically (e.g. logs/appsource/group-1/). Relative to the alwasp.json directory."
+        },
+        "manifest": {
+          "type": "string",
+          "description": "Path for the config-driven build manifest JSON file. Written after every build, including failed builds. Relative to the alwasp.json directory."
+        },
+        "diagnostics": {
+          "type": "boolean",
+          "default": false,
+          "description": "When true, parsed AL diagnostics from altool log files are printed to the console. In GitHub Actions and Azure Pipelines, diagnostics are emitted as workflow annotations."
+        },
+        "sourceUrl": {
+          "type": "string",
+          "description": "Source repository URL to embed in compiled packages. Useful for traceability in CI artifacts."
+        },
+        "sourceCommit": {
+          "type": "string",
+          "description": "Source commit hash to embed in compiled packages. Useful for traceability in CI artifacts."
+        },
+        "continueOnError": {
+          "type": "boolean",
+          "default": false,
+          "description": "When true, the build continues to the next profile or group after a failure instead of stopping immediately. Overridden by --continue-on-error on the CLI."
+        },
+        "bcVersion": {
+          "type": "string",
+          "description": "Business Central version (e.g. '22.2'), used as a fallback when an app's 'runtime' property is missing and applicationInsights mode 'auto' needs to determine the property name to write. Falls back further to the ARTIFACT environment variable."
+        },
+        "isolateDependencyLevels": {
+          "type": "boolean",
+          "default": false,
+          "description": "When true, a project and its dependencies never share one 'altool workspace compile' invocation: build groups are split at topological dependency-level boundaries. Mutually independent projects in the same level still compile in parallel. Narrows concurrent read/write access to the shared package cache (defense-in-depth against intermittent AL1028 sharing violations) at the cost of one compiler invocation per dependency level. Applies to config-driven builds ('alwasp build') only — the low-level 'alwasp workspace build' command always compiles the whole workspace in a single invocation."
+        }
+      }
+    },
+    "versioningConfig": {
+      "type": "object",
+      "description": "Build-time app version calculation settings. May be set at the top level and/or overridden per profile — unset profile fields fall back to the top-level value, then to a hard default.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable build-time version calculation and app.json patching for the selected projects."
+        },
+        "releaseType": {
+          "type": "string",
+          "enum": ["Release", "Preview", "Hotfix", "None"],
+          "default": "None",
+          "description": "Release type used to compute the new version from the current version and date. 'None' leaves the version unchanged."
+        },
+        "source": {
+          "type": "string",
+          "enum": ["appJson", "nuget", "explicit"],
+          "default": "appJson",
+          "description": "Where to read the 'current version' baseline from. 'appJson' uses the version already in app.json. 'explicit' uses 'explicitVersion'. 'nuget' looks up the latest published package on the configured NuGet feeds, falling back to app.json when nothing is published yet (see 'fallbackToAppJson')."
+        },
+        "fallbackToAppJson": {
+          "type": "boolean",
+          "default": true,
+          "description": "When source is 'nuget' and no published package is found, fall back to the app.json version instead of failing."
+        },
+        "explicitVersion": {
+          "type": "string",
+          "description": "Explicit current-version baseline (Major.Minor.Build.Revision), used when source is 'explicit'."
+        },
+        "applyTo": {
+          "type": "string",
+          "enum": ["all", "changedOnly"],
+          "default": "all",
+          "description": "Which projects get their version updated. 'all' updates every selected project. 'changedOnly' updates only projects that change detection identified as changed (requires changeDetection to be active)."
+        }
+      }
+    },
+    "resourceExposurePolicyConfig": {
+      "type": "object",
+      "description": "Build-time 'resourceExposurePolicy' app.json patch settings. Each field is independently optional — only configured fields are written; app.json is created/updated while preserving unrelated fields. May be set at the top level and/or overridden per profile.",
+      "additionalProperties": false,
+      "properties": {
+        "allowDebugging": {
+          "type": "boolean",
+          "description": "Value to write for app.json 'resourceExposurePolicy.allowDebugging'. Omit to leave untouched."
+        },
+        "allowDownloadingSource": {
+          "type": "boolean",
+          "description": "Value to write for app.json 'resourceExposurePolicy.allowDownloadingSource'. Omit to leave untouched."
+        },
+        "includeSourceInSymbolFile": {
+          "type": "boolean",
+          "description": "Value to write for app.json 'resourceExposurePolicy.includeSourceInSymbolFile'. Omit to leave untouched."
+        }
+      }
+    },
+    "warningPolicyConfig": {
+      "type": "object",
+      "description": "Compiler warning policy. May be set in 'defaults', a profile, or a per-project override — the most specific level wins. 'altool workspace compile' has no flag for treating warnings as errors, so ALWasp enforces this itself by parsing the compiler's diagnostic logs after compilation and failing the build when non-suppressed warnings remain.",
+      "additionalProperties": false,
+      "properties": {
+        "treatWarningsAsErrors": {
+          "type": "boolean",
+          "description": "Fail the build if any non-suppressed warnings remain after compilation (codes suppressed via 'nowarn' or a ruleset are excluded). Enforced post-compile from the parsed diagnostic logs, per compile group. Supersedes the legacy 'warnAsError' alias at the same config level."
+        }
+      }
+    },
+    "applicationInsightsConfig": {
+      "type": "object",
+      "description": "Build-time Application Insights app.json patch settings. May be set at the top level and/or overridden per profile.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable build-time Application Insights resolution and app.json patching for the selected projects."
+        },
+        "source": {
+          "type": "string",
+          "enum": ["literal", "environment", "environmentByProject"],
+          "description": "Where to resolve the Application Insights value from. 'literal' uses 'value' directly. 'environment' reads a single environment variable named by 'environmentVariable'. 'environmentByProject' looks up the project id in 'environmentVariables' to find which environment variable to read."
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["auto", "connectionString", "instrumentationKey"],
+          "default": "auto",
+          "description": "Which app.json property to write. 'connectionString' writes 'applicationInsightsConnectionString'; 'instrumentationKey' writes 'applicationInsightsKey'. 'auto' derives the choice from the app's 'runtime' property (>= 7.2 uses connectionString), falling back to the configured/derived Business Central version (>= 18.2 uses connectionString)."
+        },
+        "environmentVariables": {
+          "type": "object",
+          "description": "Used when source is 'environmentByProject': maps a project id to the name of the environment variable to read for that project.",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "environmentVariable": {
+          "type": "string",
+          "description": "Used when source is 'environment': the name of the environment variable to read."
+        },
+        "value": {
+          "type": "string",
+          "description": "Used when source is 'literal': the literal value to write. May be empty to intentionally write an empty value (no Application Insights)."
+        }
+      }
+    },
+    "changeDetectionConfig": {
+      "type": "object",
+      "description": "Git-based change detection settings: determines which configured projects changed between two refs, optionally expanding to their dependents. Used by 'versioning.applyTo: changedOnly' and surfaced in console output and the build manifest. CLI '--changed-since' overrides 'base' (and activates change detection even when mode is 'none').",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["none", "git"],
+          "default": "none",
+          "description": "'git' activates local-git-based change detection for every build/version-apply run. 'none' leaves it inactive unless --changed-since is passed on the CLI."
+        },
+        "base": {
+          "type": "string",
+          "description": "Base git reference to diff from: 'latest' (newest local tag by creation date), 'latest:<pattern>' (newest local tag matching a glob under refs/tags/, e.g. 'latest:v*'), or an explicit tag/branch/commit. Required when change detection is active. Overridden by --changed-since on the CLI."
+        },
+        "head": {
+          "type": "string",
+          "default": "HEAD",
+          "description": "Head git reference to diff to. Defaults to 'HEAD'."
+        },
+        "includeDependencies": {
+          "type": "boolean",
+          "default": true,
+          "description": "When true, configured projects that (transitively) depend on a changed project are also treated as changed."
+        }
+      }
+    },
+    "appEntry": {
+      "type": "object",
+      "description": "An AL application project.",
+      "required": ["id", "path"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this project. Used as a key in profile 'include' and 'overrides' maps."
+        },
+        "path": {
+          "type": "string",
+          "description": "Path to the project directory. Must contain an app.json file. Relative to the alwasp.json directory."
+        },
+        "compatibility": {
+          "$ref": "#/$defs/compatibilityConfig"
+        }
+      }
+    },
+    "compatibilityConfig": {
+      "type": "object",
+      "description": "Source compatibility validation settings for this app.",
+      "required": ["baseline"],
+      "additionalProperties": false,
+      "properties": {
+        "baseline": {
+          "type": "string",
+          "description": "Path to the previous compiled .app package used by AppSourceCop. Relative to alwasp.json."
+        }
+      }
+    },
+    "testEntry": {
+      "type": "object",
+      "description": "An AL test project. Tests are compiled as build artifacts; test execution is out of scope for ALWasp.",
+      "required": ["id", "path"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this test project. Used as a key in profile 'include' and 'overrides' maps."
+        },
+        "path": {
+          "type": "string",
+          "description": "Path to the test project directory. Must contain an app.json file. Relative to the alwasp.json directory."
+        },
+        "app": {
+          "type": "string",
+          "description": "Optional id of the parent app that this test project exercises. Used for documentation purposes."
+        }
+      }
+    },
+    "analyzersConfig": {
+      "type": "object",
+      "description": "Built-in and custom AL analyzer configuration.",
+      "additionalProperties": false,
+      "properties": {
+        "codeCop": {
+          "type": "boolean",
+          "description": "Enable the CodeCop analyzer."
+        },
+        "appSourceCop": {
+          "type": "boolean",
+          "description": "Enable the AppSourceCop analyzer."
+        },
+        "pteCop": {
+          "type": "boolean",
+          "description": "Enable the PerTenantExtensionCop analyzer."
+        },
+        "uiCop": {
+          "type": "boolean",
+          "description": "Enable the UICop analyzer."
+        },
+        "custom": {
+          "type": "array",
+          "description": "Paths to custom analyzer DLL files. Relative to the alwasp.json directory.",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "defaultsConfig": {
+      "type": "object",
+      "description": "Default compiler settings applied to every profile. Profile settings take precedence over defaults, and per-project overrides take precedence over profiles.",
+      "additionalProperties": false,
+      "properties": {
+        "ruleset": {
+          "type": "string",
+          "description": "Path to a ruleset file that overrides diagnostic severities. Relative to the alwasp.json directory."
+        },
+        "nowarn": {
+          "type": "array",
+          "description": "Warning codes to suppress globally (e.g. 'AL0001'). Merged with profile and per-project nowarn lists.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "warnAsError": {
+          "type": "boolean",
+          "description": "Legacy alias for 'warningPolicy.treatWarningsAsErrors'. Used only when 'warningPolicy' is not set at the same level. Prefer 'warningPolicy.treatWarningsAsErrors' in new configs."
+        },
+        "warningPolicy": {
+          "$ref": "#/$defs/warningPolicyConfig",
+          "description": "Default warning policy applied to every profile. Profile and per-project override values take precedence."
+        },
+        "errorLog": {
+          "type": "string",
+          "description": "Path to write all diagnostics. Relative to the alwasp.json directory."
+        },
+        "features": {
+          "type": "array",
+          "description": "Feature flags to enable globally. Merged with profile and per-project feature lists.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "defines": {
+          "type": "array",
+          "description": "Preprocessor symbols to define globally. Merged with profile and per-project define lists. Config-driven build writes the resolved set into each project's app.json preprocessorSymbols (and restores app.json afterwards) instead of passing a group-wide /define, so projects that differ only in defines can share one compile group.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "parallel": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable parallel compilation within a project."
+        },
+        "maxParallelism": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 4,
+          "description": "Maximum number of parallel compilation tasks within a single project."
+        },
+        "analyzers": {
+          "$ref": "#/$defs/analyzersConfig",
+          "description": "Default analyzer configuration applied to all profiles."
+        },
+        "outFolder": {
+          "type": "string",
+          "description": "Default output folder for compiled .app files. Used by any profile that does not specify its own outFolder. Relative to the alwasp.json directory."
+        }
+      }
+    },
+    "appOverrideConfig": {
+      "type": "object",
+      "description": "Per-project setting overrides within a profile. Override values take precedence over profile-level values.",
+      "additionalProperties": false,
+      "properties": {
+        "defines": {
+          "type": "array",
+          "description": "Additional preprocessor symbols for this project. Merged (unioned) with profile and defaults defines, then written into this project's app.json preprocessorSymbols for the build.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "nowarn": {
+          "type": "array",
+          "description": "Additional warning codes to suppress for this project. Merged (unioned) with profile and defaults nowarn lists.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "warnAsError": {
+          "type": "boolean",
+          "description": "Legacy alias for 'warningPolicy.treatWarningsAsErrors' for this project specifically. Used only when 'warningPolicy' is not set on this override. Prefer 'warningPolicy.treatWarningsAsErrors' in new configs."
+        },
+        "warningPolicy": {
+          "$ref": "#/$defs/warningPolicyConfig",
+          "description": "Per-project override of the warning policy. Takes precedence over the profile and defaults warning policy."
+        },
+        "ruleset": {
+          "type": "string",
+          "description": "Ruleset file for this project. Overrides the profile ruleset."
+        },
+        "features": {
+          "type": "array",
+          "description": "Additional feature flags for this project. Merged (unioned) with profile and defaults features.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "codeCop": {
+          "type": "boolean",
+          "description": "Enable or disable CodeCop for this project, overriding the profile setting."
+        },
+        "appSourceCop": {
+          "type": "boolean",
+          "description": "Enable or disable AppSourceCop for this project, overriding the profile setting."
+        },
+        "pteCop": {
+          "type": "boolean",
+          "description": "Enable or disable PerTenantExtensionCop for this project, overriding the profile setting."
+        },
+        "uiCop": {
+          "type": "boolean",
+          "description": "Enable or disable UICop for this project, overriding the profile setting."
+        }
+      }
+    },
+    "profileConfig": {
+      "type": "object",
+      "description": "A named build configuration that selects which projects to compile and how.",
+      "required": ["include"],
+      "additionalProperties": false,
+      "properties": {
+        "include": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "A single include selector: 'apps', 'tests', or a specific project id."
+            },
+            {
+              "type": "array",
+              "description": "An ordered combination of include selectors.",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            }
+          ],
+          "description": "Projects to build in this profile. Use 'apps' for all apps, 'tests' for all tests, a project id for a single project, or an array combining any of these."
+        },
+        "outFolder": {
+          "type": "string",
+          "description": "Output folder for compiled .app files produced by this profile. Overrides defaults.outFolder. Relative to the alwasp.json directory."
+        },
+        "needsProfile": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "A single profile name whose compiled apps this profile depends on."
+            },
+            {
+              "type": "array",
+              "description": "Profile names whose compiled apps this profile depends on.",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            }
+          ],
+          "description": "Profile(s) whose compiled apps must be staged into the package cache before this profile builds, so its projects can resolve them as dependencies (e.g. a test profile that needs the apps it exercises). Each referenced profile must run earlier in the same target and declare an outFolder (or defaults.outFolder). Staged apps are removed afterward, leaving the package cache symbols-only between profiles."
+        },
+        "outputSuffix": {
+          "type": "string",
+          "description": "Cosmetic suffix appended to each compiled .app file name produced by this profile, before the .app extension (e.g. '_develop' produces 'Publisher_Name_1.0.0.0_develop.app'). Affects the file name only — not the app identity inside the manifest — so it is a label for distinguishing artifacts, such as a debug build intended for development containers. Must be a safe filename fragment: no path separators or characters that are invalid in a file name."
+        },
+        "codeCop": {
+          "type": "boolean",
+          "description": "Enable the CodeCop analyzer for all projects in this profile."
+        },
+        "appSourceCop": {
+          "type": "boolean",
+          "description": "Enable the AppSourceCop analyzer for all projects in this profile."
+        },
+        "pteCop": {
+          "type": "boolean",
+          "description": "Enable the PerTenantExtensionCop analyzer for all projects in this profile."
+        },
+        "uiCop": {
+          "type": "boolean",
+          "description": "Enable the UICop analyzer for all projects in this profile."
+        },
+        "warnAsError": {
+          "type": "boolean",
+          "description": "Legacy alias for 'warningPolicy.treatWarningsAsErrors' for this profile. Used only when 'warningPolicy' is not set on this profile. Prefer 'warningPolicy.treatWarningsAsErrors' in new configs."
+        },
+        "warningPolicy": {
+          "$ref": "#/$defs/warningPolicyConfig",
+          "description": "Per-profile override of the warning policy. Takes precedence over 'defaults.warningPolicy'; per-project overrides take precedence over this."
+        },
+        "nowarn": {
+          "type": "array",
+          "description": "Warning codes to suppress for all projects in this profile. Merged with defaults.nowarn.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ruleset": {
+          "type": "string",
+          "description": "Ruleset file for all projects in this profile. Relative to the alwasp.json directory."
+        },
+        "defines": {
+          "type": "array",
+          "description": "Preprocessor symbols to define for all projects in this profile. Merged with defaults.defines, then written into each selected project's app.json preprocessorSymbols for the build.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "features": {
+          "type": "array",
+          "description": "Feature flags to enable for all projects in this profile. Merged with defaults.features.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "manifest": {
+          "type": "string",
+          "description": "Path for the build manifest written after this profile completes. Takes precedence over workspace.manifest. Relative to the alwasp.json directory."
+        },
+        "versioning": {
+          "$ref": "#/$defs/versioningConfig",
+          "description": "Per-profile override of the top-level 'versioning' settings. Unset fields fall back to the top-level config, then to a hard default."
+        },
+        "resourceExposurePolicy": {
+          "$ref": "#/$defs/resourceExposurePolicyConfig",
+          "description": "Per-profile override of the top-level 'resourceExposurePolicy' settings. Unset fields fall back to the top-level config."
+        },
+        "applicationInsights": {
+          "$ref": "#/$defs/applicationInsightsConfig",
+          "description": "Per-profile override of the top-level 'applicationInsights' settings. Unset fields fall back to the top-level config."
+        },
+        "overrides": {
+          "type": "object",
+          "description": "Per-project setting overrides for this profile, keyed by project id. Override values take precedence over all profile-level settings.",
+          "additionalProperties": {
+            "$ref": "#/$defs/appOverrideConfig"
+          }
+        }
+      }
+    }
+  }
+}

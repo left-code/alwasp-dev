@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & discussion
+    url: https://github.com/left-code/alwasp-dev/discussions
+    about: Ask questions, share configs, and discuss usage here.
+  - name: Documentation
+    url: https://alwasp.dev
+    about: Read the ALWasp documentation.

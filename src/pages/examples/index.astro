@@ -1,0 +1,158 @@
+---
+import BaseLayout from "@layouts/BaseLayout.astro";
+
+const configExample = `{
+  "$schema": "https://alwasp.dev/schema/alwasp.schema.json",
+  "version": 1,
+  "defaultTarget": "ci",
+  "defaults": {
+    "nowarn": ["AA0207"],
+    "analyzers": { "codeCop": true }
+  },
+  "restore": {
+    "enabled": true,
+    "mode": "Locked",
+    "packagesFolder": ".alpackages",
+    "country": "W1"
+  },
+  "workspace": {
+    "logDirectory": ".alwasp/logs",
+    "manifest": ".alwasp/build-manifest.json",
+    "maxCpuCount": 4,
+    "continueOnError": false
+  },
+  "versioning": {
+    "enabled": true,
+    "releaseType": "Release",
+    "source": "appJson",
+    "applyTo": "changedOnly"
+  },
+  "changeDetection": {
+    "mode": "git",
+    "base": "latest:v*",
+    "includeDependencies": true
+  },
+  "apps": [
+    { "id": "Broker", "path": "./Broker" }
+  ],
+  "tests": [
+    { "id": "BrokerTest", "path": "./BrokerTest", "app": "Broker" }
+  ],
+  "profiles": {
+    "appsource": {
+      "include": "apps",
+      "outFolder": "output/appsource",
+      "appSourceCop": true,
+      "warningPolicy": { "treatWarningsAsErrors": true }
+    },
+    "test": {
+      "include": "tests",
+      "outFolder": "output/tests",
+      "needsProfile": "appsource"
+    }
+  },
+  "targets": {
+    "ci": ["appsource", "test"]
+  }
+}`;
+
+const githubExample = `name: ALWasp
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - run: dotnet tool install --global left-code.AlWasp
+      - run: alwasp config validate
+      - run: alwasp tools update --check
+        continue-on-error: true
+      - run: alwasp build ci --auth-mode noninteractive --manifest output/build-manifest.json
+        env:
+          ALWASP_PAT: \${{ secrets.AZURE_ARTIFACTS_PAT }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-manifest
+          path: output/build-manifest.json`;
+---
+
+<BaseLayout title="Examples" description="Practical ALWasp examples for config-driven builds, CI, private feeds, and versioning.">
+  <main class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <div class="max-w-3xl">
+      <p class="text-sm font-semibold uppercase tracking-wide text-wasp-700">Examples</p>
+      <h1 class="mt-3 text-4xl font-semibold tracking-normal text-ink-900">Copy-ready workflows for common ALWasp usage.</h1>
+      <p class="mt-4 text-lg leading-8 text-ink-700">
+        These examples are intentionally close to the current CLI behavior and schema so they can be adapted directly into a Business Central AL repository.
+      </p>
+    </div>
+
+    <div class="mt-10 grid gap-6 lg:grid-cols-2">
+      <section class="rounded-lg border border-ink-200 bg-white p-6 shadow-sm">
+        <h2 class="text-xl font-semibold text-ink-900">Config-driven CI target</h2>
+        <p class="mt-2 text-sm leading-6 text-ink-700">Set shared analyzer/nowarn defaults, inventory apps and tests, enforce warnings as errors for AppSource, and calculate versions only for changed projects.</p>
+        <pre class="mt-5 overflow-x-auto rounded-lg bg-ink-900 p-4 text-sm leading-6 text-ink-50"><code>{configExample}</code></pre>
+      </section>
+
+      <section class="rounded-lg border border-ink-200 bg-white p-6 shadow-sm">
+        <h2 class="text-xl font-semibold text-ink-900">GitHub Actions build</h2>
+        <p class="mt-2 text-sm leading-6 text-ink-700">Install the tool, validate configuration, build the CI target, and upload the manifest as an artifact.</p>
+        <pre class="mt-5 overflow-x-auto rounded-lg bg-ink-900 p-4 text-sm leading-6 text-ink-50"><code>{githubExample}</code></pre>
+      </section>
+
+      <section class="rounded-lg border border-ink-200 bg-white p-6 shadow-sm">
+        <h2 class="text-xl font-semibold text-ink-900">Private feed restore</h2>
+        <p class="mt-2 text-sm leading-6 text-ink-700">Use feed-specific environment variables when multiple private feeds need separate credentials.</p>
+        <pre class="mt-5 overflow-x-auto rounded-lg bg-ink-900 p-4 text-sm leading-6 text-ink-50"><code>{`export MY_FEED_PAT="$TOKEN"
+alwasp restore \\
+  --feed https://pkgs.dev.azure.com/org/_packaging/feed/nuget/v3/index.json \\
+  --feed-token-env https://pkgs.dev.azure.com/org/_packaging/feed/nuget/v3/index.json=MY_FEED_PAT \\
+  --auth-mode noninteractive`}</code></pre>
+      </section>
+
+      <section class="rounded-lg border border-ink-200 bg-white p-6 shadow-sm">
+        <h2 class="text-xl font-semibold text-ink-900">Permanent version application</h2>
+        <p class="mt-2 text-sm leading-6 text-ink-700">Run this before your pipeline commits and tags calculated versions. ALWasp only writes `app.json`; git remains external.</p>
+        <pre class="mt-5 overflow-x-auto rounded-lg bg-ink-900 p-4 text-sm leading-6 text-ink-50"><code>{`alwasp version apply release --changed-since latest:v*
+git diff -- */app.json
+git commit -am "Apply AL app versions"
+git tag v2026.6.0`}</code></pre>
+      </section>
+
+      <section class="rounded-lg border border-ink-200 bg-white p-6 shadow-sm">
+        <h2 class="text-xl font-semibold text-ink-900">Re-upload a sandbox artifact</h2>
+        <p class="mt-2 text-sm leading-6 text-ink-700">Assign a fresh deployment package ID to an already compiled app without changing its app identity or ZIP payload.</p>
+        <pre class="mt-5 overflow-x-auto rounded-lg bg-ink-900 p-4 text-sm leading-6 text-ink-50"><code>{`alwasp app set-package-id ./output/developer/MyApp.app
+alwasp app set-package-id ./output/developer/MyApp.app --out ./output/reupload/MyApp.app`}</code></pre>
+      </section>
+
+      <section class="rounded-lg border border-ink-200 bg-white p-6 shadow-sm">
+        <h2 class="text-xl font-semibold text-ink-900">Multi-app compatibility gate</h2>
+        <p class="mt-2 text-sm leading-6 text-ink-700">Discover source projects and dynamically downloaded previous packages recursively, match them by app ID, and apply one AppSourceCop ruleset.</p>
+        <pre class="mt-5 overflow-x-auto rounded-lg bg-ink-900 p-4 text-sm leading-6 text-ink-50"><code>{`alwasp validate compatibility \\
+  --project-root ./src \\
+  --baseline-directory ./latest \\
+  --packages ./.alpackages \\
+  --ruleset ./rulesets/AppSourceCop.ruleset.json
+
+alwasp compare \\
+  ./latest/MyApp.app \\
+  ./output/MyApp.app \\
+  --json ./output/compare.json \\
+  --fail-on breaking`}</code></pre>
+      </section>
+    </div>
+  </main>
+</BaseLayout>

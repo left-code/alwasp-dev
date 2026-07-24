@@ -1,0 +1,38 @@
+name: Bug report
+description: Report a problem with the ALWasp tool or its documentation
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a report. Please fill out the sections below.
+  - type: input
+    id: version
+    attributes:
+      label: ALWasp version
+      description: Output of `alwasp --version` (or the NuGet package version).
+      placeholder: 0.1.0-preview.11
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the problem, plus what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The command(s) you ran and any relevant `alwasp.json`.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, .NET version, CI vs local, feed/auth setup if relevant.
+    validations:
+      required: false

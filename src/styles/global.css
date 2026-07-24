@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-ink-50 text-ink-900 antialiased;
+  }
+
+  ::selection {
+    @apply bg-wasp-300 text-ink-900;
+  }
+}
+
+@layer components {
+  .prose-docs {
+    @apply max-w-none text-[15px] leading-7 text-ink-700;
+  }
+
+  .prose-docs h1 {
+    @apply mb-4 mt-0 text-4xl font-semibold tracking-normal text-ink-900;
+  }
+
+  .prose-docs h2 {
+    @apply mb-3 mt-10 border-t border-ink-200 pt-8 text-2xl font-semibold tracking-normal text-ink-900;
+  }
+
+  .prose-docs h3 {
+    @apply mb-2 mt-7 text-lg font-semibold text-ink-900;
+  }
+
+  .prose-docs p {
+    @apply my-4;
+  }
+
+  .prose-docs a {
+    @apply font-medium text-mint-700 underline decoration-mint-500/30 underline-offset-4;
+  }
+
+  .prose-docs ul,
+  .prose-docs ol {
+    @apply my-4 pl-6;
+  }
+
+  .prose-docs ul {
+    @apply list-disc;
+  }
+
+  .prose-docs ol {
+    @apply list-decimal;
+  }
+
+  .prose-docs li {
+    @apply my-1;
+  }
+
+  .prose-docs code:not(pre code) {
+    @apply rounded bg-ink-100 px-1.5 py-0.5 font-mono text-[0.88em] text-ink-900;
+  }
+
+  .prose-docs pre {
+    @apply my-5 overflow-x-auto rounded-lg border border-ink-200 bg-ink-900 p-4 text-sm leading-6 text-ink-50 shadow-soft;
+  }
+
+  .prose-docs table {
+    @apply my-5 w-full border-collapse overflow-hidden rounded-lg text-left text-sm;
+  }
+
+  .prose-docs th {
+    @apply border-b border-ink-200 bg-white px-4 py-3 font-semibold text-ink-900;
+  }
+
+  .prose-docs td {
+    @apply border-b border-ink-200 px-4 py-3 align-top;
+  }
+
+  .prose-docs blockquote {
+    @apply my-5 border-l-4 border-wasp-300 bg-white px-5 py-3 text-ink-700;
+  }
+}

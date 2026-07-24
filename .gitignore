@@ -1,0 +1,11 @@
+# build output
+dist/
+# generated types / astro cache
+.astro/
+# dependencies
+node_modules/
+# env
+.env
+.env.production
+# os / editor
+.DS_Store
