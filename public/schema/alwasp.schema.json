@@ -237,6 +237,17 @@
           "enum": ["all", "changedOnly"],
           "default": "all",
           "description": "Which projects get their version updated. 'all' updates every selected project. 'changedOnly' updates only projects that change detection identified as changed (requires changeDetection to be active)."
+        },
+        "includeDependencies": {
+          "type": "boolean",
+          "default": true,
+          "description": "When true, a selected/versioned project's dependencies on other selected/versioned projects are updated to those projects' calculated versions. External dependencies are never changed."
+        },
+        "dependencyUpdateScope": {
+          "type": "string",
+          "enum": ["directlyChanged", "allVersioned"],
+          "default": "directlyChanged",
+          "description": "Controls which calculated internal versions may be written into dependency entries. 'directlyChanged' updates references only when the dependency project has direct git changes. 'allVersioned' also propagates versions assigned solely because a project is a dependant."
         }
       }
     },
@@ -321,17 +332,21 @@
         },
         "base": {
           "type": "string",
-          "description": "Base git reference to diff from: 'latest' (newest local tag by creation date), 'latest:<pattern>' (newest local tag matching a glob under refs/tags/, e.g. 'latest:v*'), or an explicit tag/branch/commit. Required when change detection is active. Overridden by --changed-since on the CLI."
+          "description": "Base git reference to diff from: 'latest' (newest local tag by creation date), 'latest:<pattern>' (newest local tag matching a glob under refs/tags/, e.g. 'latest:v*'), 'latest-merge:<text>' (nearest merge on the head's first-parent history whose commit message contains the text), or an explicit tag/branch/commit. Required when change detection is active. Overridden by --changed-since on the CLI."
         },
         "head": {
           "type": "string",
           "default": "HEAD",
           "description": "Head git reference to diff to. Defaults to 'HEAD'."
         },
-        "includeDependencies": {
+        "includeDependents": {
           "type": "boolean",
           "default": true,
           "description": "When true, configured projects that (transitively) depend on a changed project are also treated as changed."
+        },
+        "includeDependencies": {
+          "type": "boolean",
+          "description": "Deprecated alias for changeDetection.includeDependents. Retained for backward compatibility; includeDependents wins when both are present."
         }
       }
     },
