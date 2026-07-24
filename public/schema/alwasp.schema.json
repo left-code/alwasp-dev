@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/left-code/alwasp/main/schemas/alwasp.schema.json",
+  "$id": "https://alwasp.dev/schema/alwasp.schema.json",
   "title": "alwasp.json",
   "description": "Configuration file for ALWasp — AL symbol restore and multi-project build orchestration.",
   "type": "object",
