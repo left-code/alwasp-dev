@@ -15,10 +15,10 @@ const sortedDocs = [...docs].sort((a, b) => a.data.order - b.data.order);
     <div class="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-ink-500">Documentation</div>
     <nav class="space-y-1" aria-label="Documentation navigation">
       {sortedDocs.map((doc) => {
-        const active = doc.slug === currentSlug;
+        const active = doc.id === currentSlug;
         return (
           <a
-            href={`/docs/${doc.slug}/`}
+            href={`/docs/${doc.id}/`}
             class:list={[
               "block rounded-md px-3 py-2 text-sm transition",
               active

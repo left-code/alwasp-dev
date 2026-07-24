@@ -22,7 +22,7 @@ This is an [Astro](https://astro.build) site, deployed to GitHub Pages at `alwas
 
 Prerequisites:
 
-- Node.js `18.20.8`, `20.3.0` or newer in the Node 20 line, or Node.js 22+
+- Node.js `22.12.0` or newer
 - npm `9.6.5` or newer
 
 ```bash
