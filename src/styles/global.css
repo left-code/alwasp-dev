@@ -4,6 +4,7 @@
   --color-ink-50: #f7f8fb;
   --color-ink-100: #ebeef5;
   --color-ink-200: #d7deeb;
+  --color-ink-300: #b9c4d6;
   --color-ink-500: #64748b;
   --color-ink-700: #334155;
   --color-ink-900: #111827;
@@ -36,6 +37,10 @@
     @apply bg-ink-50 text-ink-900 antialiased;
   }
 
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-mint-500;
+  }
+
   ::selection {
     @apply bg-wasp-300 text-ink-900;
   }
@@ -44,6 +49,7 @@
 @layer components {
   .prose-docs {
     @apply max-w-none text-[15px] leading-7 text-ink-700;
+    overflow-wrap: anywhere;
   }
 
   .prose-docs h1 {
@@ -51,11 +57,11 @@
   }
 
   .prose-docs h2 {
-    @apply mb-3 mt-10 border-t border-ink-200 pt-8 text-2xl font-semibold tracking-normal text-ink-900;
+    @apply mb-3 mt-10 scroll-mt-28 border-t border-ink-200 pt-8 text-2xl font-semibold tracking-normal text-ink-900;
   }
 
   .prose-docs h3 {
-    @apply mb-2 mt-7 text-lg font-semibold text-ink-900;
+    @apply mb-2 mt-7 scroll-mt-28 text-lg font-semibold text-ink-900;
   }
 
   .prose-docs p {
@@ -104,6 +110,10 @@
   }
 
   .prose-docs blockquote {
-    @apply my-5 border-l-4 border-wasp-300 bg-white px-5 py-3 text-ink-700;
+    @apply my-5 rounded-r-lg border-l-4 border-wasp-300 bg-wasp-100/50 px-5 py-3 text-ink-700;
+  }
+
+  .doc-article .prose-docs > h1:first-child {
+    @apply hidden;
   }
 }

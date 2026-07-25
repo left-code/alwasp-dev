@@ -3,21 +3,88 @@ import BaseLayout from "./BaseLayout.astro";
 import DocsSidebar from "@components/DocsSidebar.astro";
 import { getCollection } from "astro:content";
 
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
 interface Props {
   title: string;
   description: string;
   slug?: string;
+  headings?: Heading[];
 }
 
-const { title, description, slug } = Astro.props;
-const docs = await getCollection("docs");
+const { title, description, slug, headings = [] } = Astro.props;
+const docs = (await getCollection("docs")).sort((a, b) => a.data.order - b.data.order);
+const currentIndex = docs.findIndex((doc) => doc.id === slug);
+const previous = currentIndex > 0 ? docs[currentIndex - 1] : undefined;
+const next = currentIndex >= 0 && currentIndex < docs.length - 1 ? docs[currentIndex + 1] : undefined;
+const pageHeadings = headings.filter((heading) => heading.depth === 2);
 ---
 
 <BaseLayout title={title} description={description}>
-  <main class="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:px-8">
-    <DocsSidebar docs={docs} currentSlug={slug} />
-    <article class="min-w-0 rounded-lg border border-ink-200 bg-white p-6 shadow-sm sm:p-8">
-      <slot />
-    </article>
+  <main>
+    <section class="docs-grid relative overflow-hidden border-b border-ink-900 bg-ink-900 text-white">
+      <div class="pointer-events-none absolute -right-20 -top-32 h-72 w-72 rounded-full bg-wasp-300/10 blur-3xl"></div>
+      <div class="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+        <nav class="flex flex-wrap items-center gap-2 text-xs font-semibold text-ink-500" aria-label="Breadcrumb">
+          <a href="/" class="hover:text-white">Home</a><span aria-hidden="true">/</span><a href="/docs/configuration/" class="hover:text-white">Documentation</a><span aria-hidden="true">/</span><span class="text-wasp-300">{title}</span>
+        </nav>
+        <div class="mt-5 max-w-3xl">
+          <p class="text-xs font-bold uppercase tracking-[0.18em] text-wasp-300">ALWasp guide</p>
+          <h1 class="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">{title}</h1>
+          <p class="mt-4 text-lg leading-8 text-ink-200">{description}</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="mx-auto grid max-w-7xl gap-7 px-4 py-8 sm:px-6 lg:grid-cols-[220px_minmax(0,1fr)] lg:px-8 lg:py-12 xl:grid-cols-[220px_minmax(0,1fr)_190px]">
+      <DocsSidebar docs={docs} currentSlug={slug} />
+
+      <div class="min-w-0">
+        <article class="doc-article min-w-0 rounded-xl border border-ink-200 bg-white p-6 shadow-sm sm:p-8 lg:p-10">
+          <slot />
+        </article>
+
+        <nav class="mt-6 grid gap-4 sm:grid-cols-2" aria-label="Adjacent documentation">
+          {previous ? (
+            <a href={`/docs/${previous.id}/`} class="group rounded-xl border border-ink-200 bg-white p-5 shadow-sm transition hover:border-wasp-300 hover:shadow-soft">
+              <span class="text-xs font-bold uppercase tracking-[0.14em] text-ink-500">← Previous</span>
+              <span class="mt-2 block font-semibold text-ink-900 group-hover:text-mint-700">{previous.data.title}</span>
+            </a>
+          ) : <span></span>}
+          {next && (
+            <a href={`/docs/${next.id}/`} class="group rounded-xl border border-ink-200 bg-white p-5 text-right shadow-sm transition hover:border-wasp-300 hover:shadow-soft">
+              <span class="text-xs font-bold uppercase tracking-[0.14em] text-ink-500">Next →</span>
+              <span class="mt-2 block font-semibold text-ink-900 group-hover:text-mint-700">{next.data.title}</span>
+            </a>
+          )}
+        </nav>
+      </div>
+
+      {pageHeadings.length > 0 && (
+        <aside class="hidden xl:block">
+          <nav class="sticky top-24 border-l border-ink-200 pl-4" aria-label="On this page">
+            <div class="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-ink-500">On this page</div>
+            <ul class="space-y-2.5">
+              {pageHeadings.map((heading) => (
+                <li><a href={`#${heading.slug}`} class="block text-xs leading-5 text-ink-700 transition hover:text-mint-700">{heading.text}</a></li>
+              ))}
+            </ul>
+          </nav>
+        </aside>
+      )}
+    </div>
   </main>
+
+  <style>
+    .docs-grid {
+      background-image:
+        linear-gradient(rgb(255 255 255 / 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgb(255 255 255 / 0.03) 1px, transparent 1px);
+      background-size: 44px 44px;
+    }
+  </style>
 </BaseLayout>

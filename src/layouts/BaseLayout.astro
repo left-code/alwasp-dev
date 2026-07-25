@@ -1,5 +1,6 @@
 ---
 import Header from "@components/Header.astro";
+import Footer from "@components/Footer.astro";
 import "../styles/global.css";
 
 interface Props {
@@ -19,8 +20,12 @@ const { title, description = "ALWasp documentation for Business Central AL symbo
     <link rel="icon" type="image/png" href="/icon.png" />
     <title>{title} | ALWasp</title>
   </head>
-  <body>
+  <body class="flex min-h-screen flex-col">
+    <a href="#main-content" class="fixed left-3 top-3 z-[100] -translate-y-24 rounded-md bg-wasp-300 px-4 py-2 text-sm font-bold text-ink-900 shadow-soft transition focus:translate-y-0">Skip to content</a>
     <Header />
-    <slot />
+    <div id="main-content" class="flex-1" tabindex="-1">
+      <slot />
+    </div>
+    <Footer />
   </body>
 </html>

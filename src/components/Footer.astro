@@ -1,0 +1,66 @@
+---
+import GitHubIcon from "@components/GitHubIcon.astro";
+
+const groups = [
+  {
+    title: "Start",
+    links: [
+      ["Getting started", "/docs/getting-started/"],
+      ["Configuration", "/docs/configuration/"],
+      ["Examples", "/examples/"]
+    ]
+  },
+  {
+    title: "Build",
+    links: [
+      ["Restore symbols", "/docs/restore/"],
+      ["Build projects", "/docs/build/"],
+      ["Compatibility", "/docs/compatibility/"]
+    ]
+  },
+  {
+    title: "Reference",
+    links: [
+      ["CLI reference", "/docs/cli-reference/"],
+      ["Cheatsheet", "/cheatsheet/"],
+      ["CI/CD", "/docs/ci-cd/"]
+    ]
+  }
+];
+---
+
+<footer class="site-footer border-t border-ink-200 bg-white">
+  <div class="mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:px-6 md:grid-cols-[1.25fr_2fr] lg:px-8">
+    <div class="max-w-sm">
+      <a href="/" class="flex items-center gap-3">
+        <img src="/icon.png" alt="" class="h-10 w-10 rounded-lg" />
+        <div>
+          <div class="text-sm font-bold uppercase tracking-[0.12em] text-ink-900">ALWasp</div>
+          <div class="text-xs text-ink-500">Business Central AL build tooling</div>
+        </div>
+      </a>
+      <p class="mt-4 text-sm leading-6 text-ink-700">Restore, build, compare, and validate AL projects with one reproducible workflow.</p>
+      <a href="https://github.com/left-code/alwasp-dev" target="_blank" rel="noreferrer" class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-ink-700 transition hover:text-ink-900">
+        <GitHubIcon class="h-4 w-4" /> View project on GitHub
+      </a>
+    </div>
+    <div class="grid grid-cols-2 gap-8 sm:grid-cols-3">
+      {groups.map((group) => (
+        <div>
+          <h2 class="text-xs font-bold uppercase tracking-[0.16em] text-ink-500">{group.title}</h2>
+          <ul class="mt-4 space-y-3">
+            {group.links.map(([label, href]) => (
+              <li><a href={href} class="text-sm text-ink-700 hover:text-mint-700 hover:underline">{label}</a></li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  </div>
+  <div class="border-t border-ink-200 bg-ink-50">
+    <div class="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-4 text-xs text-ink-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+      <span>ALWasp documentation · v0.1.0-preview.14</span>
+      <span>Open-source documentation for Business Central AL workflows.</span>
+    </div>
+  </div>
+</footer>

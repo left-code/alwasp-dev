@@ -52,6 +52,9 @@ const changeRefs = [
       <div class="pointer-events-none absolute -bottom-24 left-1/3 h-48 w-48 rotate-12 rounded-[2.5rem] bg-mint-500/10"></div>
       <div class="relative mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-8 lg:py-16">
         <div class="max-w-4xl">
+          <nav class="mb-5 flex items-center gap-2 text-xs font-semibold text-ink-500" aria-label="Breadcrumb">
+            <a href="/" class="hover:text-white">Home</a><span aria-hidden="true">/</span><span class="text-wasp-300">Cheatsheet</span>
+          </nav>
           <div class="flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-wasp-300">
             <span>ALWasp field guide</span>
             <span class="h-px w-12 bg-wasp-300/60"></span>
@@ -263,13 +266,13 @@ const changeRefs = [
         </article>
       </section>
 
-      <footer class="flex flex-col gap-3 border-t border-ink-200 pt-6 text-sm text-ink-500 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex flex-col gap-3 border-t border-ink-200 pt-6 text-sm text-ink-500 sm:flex-row sm:items-center sm:justify-between">
         <span>ALWasp cheatsheet · documentation for v0.1.0-preview.14</span>
         <div class="flex gap-4 font-semibold">
           <a href="/docs/getting-started/" class="text-mint-700 hover:underline">Getting started</a>
           <a href="/examples/" class="text-mint-700 hover:underline">Examples</a>
         </div>
-      </footer>
+      </div>
     </div>
   </main>
 
@@ -280,7 +283,7 @@ const changeRefs = [
   <style is:global>
     @media print {
       @page { margin: 12mm; size: A4 portrait; }
-      header, .cheatsheet-actions, .cheatsheet-nav { display: none !important; }
+      header, .site-footer, .cheatsheet-actions, .cheatsheet-nav { display: none !important; }
       body { background: white !important; }
       main { padding-bottom: 0 !important; }
       section, article { break-inside: avoid; }
