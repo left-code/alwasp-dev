@@ -11,7 +11,7 @@ body:
     attributes:
       label: ALWasp version
       description: Output of `alwasp --version` (or the NuGet package version).
-      placeholder: 0.1.0-preview.13
+      placeholder: 0.1.0-preview.14
     validations:
       required: true
   - type: textarea

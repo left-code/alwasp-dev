@@ -63,8 +63,8 @@ For every ALWasp release:
 5. Commit the synchronized site and tag that commit with the same `v<tool-version>` tag used in the
    tool repository.
 
-For example, tool version `0.1.0-preview.13` corresponds to documentation package version
-`0.1.0-preview.13` and git tag `v0.1.0-preview.13`. Matching tags keep documentation history aligned
+For example, tool version `0.1.0-preview.14` corresponds to documentation package version
+`0.1.0-preview.14` and git tag `v0.1.0-preview.14`. Matching tags keep documentation history aligned
 with the exact CLI and schema it describes and give the next release a clear comparison baseline.
 
 ## License
