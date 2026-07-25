@@ -3,6 +3,11 @@
 Public home for **ALWasp** — documentation, the `alwasp.json` config schema, examples, and
 user support.
 
+> [!IMPORTANT]
+> ALWasp is proprietary software that is free to use; the tool itself is not open source.
+> This open-source repository contains its public documentation and schema and is the place to
+> report bugs, ask questions, and request features.
+
 - 📖 **Docs:** <https://alwasp.dev>
 - 🧩 **Config schema:** <https://alwasp.dev/schema/alwasp.schema.json>
   (reference it from your `alwasp.json` via `"$schema"`)
@@ -69,4 +74,5 @@ with the exact CLI and schema it describes and give the next release a clear com
 
 ## License
 
-[MIT](./LICENSE).
+The documentation website source and other contents of this repository are licensed under the
+[MIT License](./LICENSE). This license does not apply to the ALWasp tool itself.
