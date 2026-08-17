@@ -41,6 +41,9 @@
     "changeDetection": {
       "$ref": "#/$defs/changeDetectionConfig"
     },
+    "translations": {
+      "$ref": "#/$defs/translationsConfig"
+    },
     "apps": {
       "type": "array",
       "description": "Inventory of AL application projects (non-test). Each entry maps an id to a folder path relative to this file.",
@@ -247,7 +250,7 @@
           "type": "string",
           "enum": ["directlyChanged", "allVersioned"],
           "default": "directlyChanged",
-          "description": "Controls which calculated internal versions may be written into dependency entries. 'directlyChanged' updates references only when the dependency project has direct git changes. 'allVersioned' also propagates versions assigned solely because a project is a dependant."
+          "description": "Controls which calculated internal versions may be written into dependency entries. 'directlyChanged' updates a reference only when both the consuming project and dependency project have direct git changes. 'allVersioned' propagates every selected calculated version."
         }
       }
     },
@@ -321,14 +324,14 @@
     },
     "changeDetectionConfig": {
       "type": "object",
-      "description": "Git-based change detection settings: determines which configured projects changed between two refs, optionally expanding to their dependents. Used by 'versioning.applyTo: changedOnly' and surfaced in console output and the build manifest. CLI '--changed-since' overrides 'base' (and activates change detection even when mode is 'none').",
+      "description": "Git-based change detection settings: determines which configured projects changed between two refs, optionally expanding to their dependents. Used by 'versioning.applyTo: changedOnly' and by 'validate translations' to check only changed projects, and surfaced in console output and the build manifest. CLI '--changed-since' overrides 'base' (and activates change detection even when mode is 'none').",
       "additionalProperties": false,
       "properties": {
         "mode": {
           "type": "string",
           "enum": ["none", "git"],
           "default": "none",
-          "description": "'git' activates local-git-based change detection for every build/version-apply run. 'none' leaves it inactive unless --changed-since is passed on the CLI."
+          "description": "'git' activates local-git-based change detection for every build, version-apply, and translation-validation run. 'none' leaves it inactive unless --changed-since is passed on the CLI."
         },
         "base": {
           "type": "string",
@@ -366,6 +369,75 @@
         },
         "compatibility": {
           "$ref": "#/$defs/compatibilityConfig"
+        },
+        "translations": {
+          "$ref": "#/$defs/appTranslationsConfig"
+        }
+      }
+    },
+    "translationsConfig": {
+      "type": "object",
+      "description": "Translation coverage settings used by 'alwasp validate translations'. Strictness is repository-wide; apps may only opt out or narrow their language list.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Set to false to exclude every app from the check. Default: true.",
+          "default": true
+        },
+        "languages": {
+          "type": "array",
+          "description": "Language tags every checked app must ship, e.g. [\"da-DK\", \"de-DE\"]. A required language without a translation file is reported as missing. Languages present in a project but not listed here are still checked for untranslated units.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "untranslatedPlaceholders": {
+          "type": "array",
+          "description": "Target texts that mean 'not translated yet' rather than a finished translation, e.g. the literal written by XLIFF Sync's 'missingTranslation' setting. Comparison is case-insensitive on the trimmed target. Omit to use the built-in defaults ([\"%EMPTY%\"]); use an empty array to disable the check.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "checkPlaceholders": {
+          "type": "boolean",
+          "description": "Also require each translation to use the same format placeholders (%1, {0}) as its source. Dropping or renumbering one breaks the text at runtime. Opt-in; default false.",
+          "default": false
+        },
+        "failOn": {
+          "type": "string",
+          "enum": ["none", "missingLanguage", "missingUnit", "untranslated", "needsReview"],
+          "description": "Strictness, from lenient to strict; each level also fails on everything the earlier levels cover. Findings below the threshold are reported as warnings. Default: untranslated.",
+          "default": "untranslated"
+        },
+        "minCoverage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Minimum coverage percentage each language must reach. Coverage counts units that have a non-empty translation, including ones flagged for review."
+        },
+        "requireGeneratedFile": {
+          "type": "boolean",
+          "description": "Fail when a project's generated .g.xlf is absent instead of only warning that missing units cannot be detected. Default: false, because the generated file is a build output that is often not committed.",
+          "default": false
+        }
+      }
+    },
+    "appTranslationsConfig": {
+      "type": "object",
+      "description": "Per-app translation coverage settings. Narrows the shared 'translations' block.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Set to false to exclude this app from the check."
+        },
+        "languages": {
+          "type": "array",
+          "description": "Language tags this app must ship. Replaces the shared list when non-empty.",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
