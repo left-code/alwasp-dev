@@ -10,7 +10,7 @@ ALWasp provides two separate compatibility workflows. Neither one is part of a n
 
 | Command | Inputs | Compiler required | Purpose |
 |---|---|---:|---|
-| `alwasp compare` | Previous `.app` + current `.app` | No | Structural public-symbol comparison |
+| `alwasp compare` | Previous `.app` + current `.app` | No | Informational public-symbol change log |
 | `alwasp validate compatibility` | Previous `.app` + current AL source | Yes | Microsoft's AppSourceCop baseline validation |
 
 These checks do not prove that an extension upgrade is runtime-safe. Publish/sync/upgrade testing, data migration, upgrade code, permissions, and changed business behavior still require an appropriate Business Central environment and test suite.
@@ -22,17 +22,16 @@ alwasp compare previous/MyApp.app output/MyApp.app
 alwasp compare previous/MyApp.app output/MyApp.app --json output/compare.json
 ```
 
-The console output is titled **ALWasp compare report** and groups public-symbol changes into breaking, review-required, and non-breaking sections. The reader uses each package's manifest and `SymbolReference.json`; it does not require AL compiler tools, a container, or a sandbox.
+The console output is titled **ALWasp compare report** and groups public-symbol changes by
+namespace into `REMOVED`, `CHANGED`, and `ADDED`. The reader uses each package's manifest and
+`SymbolReference.json`; it does not require AL compiler tools, a container, or a sandbox.
 
-The default failure threshold is `breaking`:
-
-| Option | Exit code `2` when |
-|---|---|
-| `--fail-on breaking` | At least one breaking change exists |
-| `--fail-on potentially-breaking` | A breaking or review-required change exists |
-| `--fail-on none` | Never; report-only mode |
-
-Package/read/argument failures return exit code `1`. A ruleset does not apply to `compare`; use `--fail-on` because comparison findings are ALWasp classifications, not compiler diagnostics.
+`compare` is an informational package change log, not a compatibility gate: it does not classify
+changes as breaking, and it does not fail because changes were found. A completed comparison
+always exits `0`; unreadable packages, mismatched app IDs, invalid arguments, or a report-write
+failure exit `1`. There is no `--fail-on` option and no ruleset applies to `compare` — use
+`validate compatibility` when current source must be checked against Microsoft's AppSourceCop
+baseline rules.
 
 ## Validate one source project
 

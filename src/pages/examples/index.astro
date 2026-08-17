@@ -115,11 +115,16 @@ const compatibilityGate = `alwasp validate compatibility \\
 alwasp compare \\
   ./latest/MyApp.app \\
   ./output/MyApp.app \\
-  --json ./output/compare.json \\
-  --fail-on breaking`;
+  --json ./output/compare.json`;
+
+const translationGate = `alwasp validate translations ci \\
+  --changed-since latest \\
+  --fail-on needs-review \\
+  --min-coverage 95 \\
+  --json output/translations.json`;
 ---
 
-<BaseLayout title="Examples" description="Copy-ready ALWasp examples for configuration, GitHub Actions, private feeds, versioning, package re-upload, and compatibility gates.">
+<BaseLayout title="Examples" description="Copy-ready ALWasp examples for configuration, GitHub Actions, private feeds, versioning, package re-upload, compatibility, and translation gates.">
   <main>
     <section class="examples-grid relative isolate overflow-hidden border-b border-ink-900 bg-ink-900 text-white">
       <div class="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-mint-500/15 blur-3xl"></div>
@@ -156,7 +161,7 @@ alwasp compare \\
 
     <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
       <div class="mb-8 max-w-2xl">
-        <p class="text-xs font-bold uppercase tracking-[0.18em] text-wasp-700">Six practical recipes</p>
+        <p class="text-xs font-bold uppercase tracking-[0.18em] text-wasp-700">Seven practical recipes</p>
         <h2 class="mt-2 text-3xl font-semibold tracking-tight text-ink-900">From repository setup to release confidence.</h2>
         <p class="mt-3 text-base leading-7 text-ink-700">Each example stays close to the current CLI and schema, so you can copy it first and refine it for your repository second.</p>
       </div>
@@ -167,7 +172,8 @@ alwasp compare \\
         <CodePanel id="feeds" eyebrow="Authentication" title="Private feed restore" description="Map a feed to its own environment variable when multiple authenticated sources require separate credentials." filename="restore.sh" code={privateFeed} tone="ink" />
         <CodePanel id="versioning" eyebrow="Release preparation" title="Apply versions permanently" description="Calculate project and internal dependency versions before the surrounding pipeline commits and tags them." filename="release.sh" code={versionApply} tone="wasp" />
         <CodePanel eyebrow="Sandbox workflow" title="Re-upload a compiled artifact" description="Assign a fresh deployment package ID without changing app identity or the rest of the ZIP payload." filename="reupload.ps1" code={sandboxArtifact} tone="mint" />
-        <CodePanel id="release" eyebrow="Quality gate" title="Multi-app compatibility" description="Recompile current source against previous packages, then enforce a public-symbol breaking-change threshold." filename="compatibility.sh" code={compatibilityGate} tone="ink" />
+        <CodePanel id="release" eyebrow="Quality gate" title="Multi-app compatibility" description="Recompile current source against previous packages, then read the informational public-symbol change log." filename="compatibility.sh" code={compatibilityGate} tone="ink" />
+        <CodePanel eyebrow="Quality gate · Pro" title="Translation coverage gate" description="Check only changed projects' XLIFF coverage before a release, with a per-language minimum and build annotations." filename="translations.sh" code={translationGate} tone="wasp" />
       </div>
 
       <section class="mt-12 flex flex-col gap-6 rounded-xl bg-wasp-300 px-6 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-8">

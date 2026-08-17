@@ -198,7 +198,7 @@ Key choices:
 - `releaseType`: `Release`, `Preview`, or `None`.
 - `applyTo`: `all` or `changedOnly`.
 - `includeDependencies`: update internal dependency entries to the calculated versions of selected projects; defaults to `true`.
-- `dependencyUpdateScope`: `directlyChanged` (default) updates references only to dependency projects changed directly in git; `allVersioned` propagates every selected calculated version.
+- `dependencyUpdateScope`: `directlyChanged` (default) updates a reference only when *both* the consuming project and the dependency project have direct git changes; `allVersioned` propagates every selected calculated version regardless.
 
 Set it at the top level for all profiles, or override individual fields per profile.
 
@@ -248,18 +248,58 @@ Key fields:
 
 ### `changeDetection`
 
-Maps local git diffs to configured projects.
+Maps local git diffs to configured projects. Used by `versioning.applyTo: changedOnly`, by
+[`validate translations`](/docs/translations/) to check only changed apps, and surfaced in
+console output and the build manifest.
 
 Common fields:
 
-- `mode`: `git` to enable for every run, or `none` to enable only when `--changed-since` is passed.
+- `mode`: `git` to enable for every build/version-apply/translation-validation run, or `none` to enable only when `--changed-since` is passed.
 - `base`: `latest`, `latest:<glob>`, `latest-merge:<text>`, or an explicit tag, branch, or commit.
 - `head`: defaults to `HEAD`.
 - `includeDependents`: when `true` (the default), also marks transitive dependents as changed.
 
 `latest-merge:<text>` selects the nearest merge commit on `head`'s first-parent history whose commit message contains the supplied text. This is useful when a release merge, rather than its earlier release tag, should begin the next change-detection cycle. The local checkout must contain enough history to reach the merge.
 
+ALWasp discovers the git repository from each selected project's own folder — the folder holding
+`alwasp.json` does not itself need to be a checkout — and runs `git diff --name-only base..head`
+independently per discovered repository. This makes change detection work correctly across a
+config that spans **multiple git repositories**, not only a single repository containing every
+project.
+
 `changeDetection.includeDependencies` remains accepted as a deprecated alias for `includeDependents`. Use `includeDependents` in new and updated configurations; it wins if both names are present.
+
+### `translations` — Pro
+
+Translation coverage settings used by [`alwasp validate translations`](/docs/translations/).
+Strictness is repository-wide; individual apps may only opt out or narrow their language list.
+
+| Field | Purpose |
+|---|---|
+| `enabled` | Set to `false` to exclude every app from the check. Default `true` |
+| `languages` | Language tags every checked app must ship, e.g. `["da-DK", "de-DE"]` |
+| `untranslatedPlaceholders` | Target texts meaning "not translated yet", e.g. XLIFF Sync's `%EMPTY%` marker. Default `["%EMPTY%"]`; set to `[]` to disable |
+| `checkPlaceholders` | Require matching `%1`/`{0}`/`#`-style placeholders between source and target. Default `false` |
+| `failOn` | `none`, `missingLanguage`, `missingUnit`, `untranslated` (default), or `needsReview` |
+| `minCoverage` | Minimum per-language coverage percentage (0-100) |
+| `requireGeneratedFile` | Fail when a project's generated `.g.xlf` is absent, instead of only warning. Default `false` |
+
+An `apps[]` entry can narrow the shared settings with its own `translations` block
+(`enabled` and/or a replacement `languages` list):
+
+```json
+{
+  "translations": {
+    "languages": ["da-DK", "de-DE"],
+    "failOn": "untranslated",
+    "minCoverage": 95
+  },
+  "apps": [
+    { "id": "Broker", "path": "./Broker" },
+    { "id": "Internal", "path": "./Internal", "translations": { "enabled": false } }
+  ]
+}
+```
 
 ## Validate
 
