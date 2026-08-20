@@ -130,6 +130,10 @@
           "type": "string",
           "description": "Path to a nuget.config file for feed sources and stored credentials. Relative to the alwasp.json directory."
         },
+        "overridesFolder": {
+          "type": "string",
+          "description": "Folder scanned after restore for pre-built '.app' overrides, matched by embedded AppId against the packages folder and replacing it on match. Relative to the alwasp.json directory. Config-driven builds only; omit to disable."
+        },
         "authMode": {
           "type": "string",
           "enum": ["Auto", "Interactive", "NonInteractive"],
