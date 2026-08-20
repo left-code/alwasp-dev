@@ -82,6 +82,36 @@ ALWasp writes:
 
 The manifest stores one `packageId@version` per line. Exact matches are skipped on later runs, while newer versions remain eligible.
 
+## Package overrides
+
+Config-driven builds can replace a restored dependency with a pre-built `.app`, such as an
+artifact produced by another repository before its next NuGet release:
+
+```json
+{
+  "restore": {
+    "packagesFolder": ".alpackages",
+    "overridesFolder": "artifacts/package-overrides"
+  }
+}
+```
+
+`overridesFolder` is relative to `alwasp.json` and is applied after restore completes. It is also
+applied when restore itself is disabled with `restore.enabled: false`.
+
+- Overrides and restored packages are matched by the AppId embedded in `SymbolReference.json`,
+  never by file name.
+- A matching override always wins, regardless of version. A lower override version is accepted
+  with a warning.
+- An override with no matching package in the cache is not injected; it is reported as unmatched.
+- Two override files with the same AppId fail before the package cache is changed.
+- Malformed files in the overrides folder are skipped.
+- Results expose `overriddenCount` and `overriddenUnmatchedCount`.
+
+When a match is found, ALWasp copies the override under its own file name before removing the
+stale restored file. If the stale file is locked and cannot be deleted, the build continues with
+a warning because the requested override is already present.
+
 ## Examples
 
 ```bash
@@ -91,4 +121,4 @@ alwasp restore --feed https://pkgs.dev.azure.com/org/_packaging/feed/nuget/v3/in
 alwasp workspace restore --packages ./shared/.alpackages
 ```
 
-The same feed, auth, and country settings can be supplied through `alwasp.json` for config-driven builds, where restore runs before compilation unless disabled with `restore.enabled: false`.
+The same feed, auth, country, and override settings can be supplied through `alwasp.json` for config-driven builds, where restore runs before compilation unless disabled with `restore.enabled: false`.

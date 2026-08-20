@@ -6,8 +6,6 @@ order: 6.5
 
 # Source Analysis
 
-`alwasp analyze` is a **Pro** command. See [Editions & Licensing](/docs/editions/).
-
 It answers "what did this change actually touch, and what has to be rebuilt, reviewed, or
 re-tested because of it?" — from `.al` source and git alone. It never invokes a compiler,
 restores symbols, or reaches the network, so it runs in seconds on a fresh checkout and returns

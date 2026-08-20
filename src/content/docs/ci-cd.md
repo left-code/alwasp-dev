@@ -139,25 +139,17 @@ already-built packages and reports an informational change log — it always exi
 completed comparison, so it never fails the pipeline by itself; read its JSON output or console
 report to review what changed.
 
-## Translation gate (Pro)
+## Translation gate
 
 ```yaml
-      - name: Write ALWasp Pro license
-        run: echo "${{ secrets.ALWASP_LICENSE }}" > ${{ runner.temp }}/alwasp-license.json
-        shell: bash
-
       - name: Validate translations
         run: >-
           alwasp validate translations ci
           --changed-since latest
           --fail-on needs-review
           --min-coverage 95
-        env:
-          ALWASP_LICENSE_PATH: ${{ runner.temp }}/alwasp-license.json
 ```
 
-`validate translations` is a **Pro** command — see [Editions & Licensing](/docs/editions/) and
-[Translation Coverage](/docs/translations/). Findings are also emitted as build annotations under
+See [Translation Coverage](/docs/translations/) for the complete behavior. Findings are also emitted as build annotations under
 GitHub Actions and Azure Pipelines, so missing or stale translations surface in the pipeline UI
-without reading the log. Pass a secret-mounted license file path through `ALWASP_LICENSE_PATH`
-rather than printing or committing the license itself.
+without reading the log.

@@ -97,6 +97,13 @@ alwasp restore \\
   --feed-token-env https://pkgs.dev.azure.com/org/_packaging/feed/nuget/v3/index.json=MY_FEED_PAT \\
   --auth-mode noninteractive`;
 
+const packageOverrides = `{
+  "restore": {
+    "packagesFolder": ".alpackages",
+    "overridesFolder": "artifacts/package-overrides"
+  }
+}`;
+
 const versionApply = `alwasp version apply release --changed-since "latest-merge:version-increase"
 git diff -- */app.json
 git commit -am "Apply AL app versions"
@@ -161,7 +168,7 @@ const translationGate = `alwasp validate translations ci \\
 
     <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
       <div class="mb-8 max-w-2xl">
-        <p class="text-xs font-bold uppercase tracking-[0.18em] text-wasp-700">Seven practical recipes</p>
+        <p class="text-xs font-bold uppercase tracking-[0.18em] text-wasp-700">Eight practical recipes</p>
         <h2 class="mt-2 text-3xl font-semibold tracking-tight text-ink-900">From repository setup to release confidence.</h2>
         <p class="mt-3 text-base leading-7 text-ink-700">Each example stays close to the current CLI and schema, so you can copy it first and refine it for your repository second.</p>
       </div>
@@ -170,10 +177,11 @@ const translationGate = `alwasp validate translations ci \\
         <CodePanel id="configuration" eyebrow="Foundation" title="Config-driven CI target" description="Share analyzer defaults, inventory apps and tests, enforce AppSource warnings, and version only changed projects." filename="alwasp.json" code={configExample} tone="wasp" />
         <CodePanel id="automation" eyebrow="Automation" title="GitHub Actions build" description="Install ALWasp, validate configuration, build the CI target, and publish the manifest as a pipeline artifact." filename=".github/workflows/alwasp.yml" code={githubExample} tone="mint" />
         <CodePanel id="feeds" eyebrow="Authentication" title="Private feed restore" description="Map a feed to its own environment variable when multiple authenticated sources require separate credentials." filename="restore.sh" code={privateFeed} tone="ink" />
+        <CodePanel eyebrow="Dependency override" title="Use a pre-built dependency" description="Replace a restored package with another pipeline's artifact by embedded AppId during a config-driven build." filename="alwasp.json" code={packageOverrides} tone="mint" />
         <CodePanel id="versioning" eyebrow="Release preparation" title="Apply versions permanently" description="Calculate project and internal dependency versions before the surrounding pipeline commits and tags them." filename="release.sh" code={versionApply} tone="wasp" />
         <CodePanel eyebrow="Sandbox workflow" title="Re-upload a compiled artifact" description="Assign a fresh deployment package ID without changing app identity or the rest of the ZIP payload." filename="reupload.ps1" code={sandboxArtifact} tone="mint" />
         <CodePanel id="release" eyebrow="Quality gate" title="Multi-app compatibility" description="Recompile current source against previous packages, then read the informational public-symbol change log." filename="compatibility.sh" code={compatibilityGate} tone="ink" />
-        <CodePanel eyebrow="Quality gate · Pro" title="Translation coverage gate" description="Check only changed projects' XLIFF coverage before a release, with a per-language minimum and build annotations." filename="translations.sh" code={translationGate} tone="wasp" />
+        <CodePanel eyebrow="Quality gate" title="Translation coverage gate" description="Check only changed projects' XLIFF coverage before a release, with a per-language minimum and build annotations." filename="translations.sh" code={translationGate} tone="wasp" />
       </div>
 
       <section class="mt-12 flex flex-col gap-6 rounded-xl bg-wasp-300 px-6 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-8">

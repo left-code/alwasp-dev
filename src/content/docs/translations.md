@@ -6,8 +6,6 @@ order: 6.6
 
 # Translation Coverage
 
-`alwasp validate translations` is a **Pro** command. See [Editions & Licensing](/docs/editions/).
-
 It answers the pre-release question "is everything translated?" by comparing each project's
 generated `Translations/<App>.g.xlf` against the language files beside it. No compiler, symbol
 restore, or Business Central environment is involved — it only reads XLIFF files.

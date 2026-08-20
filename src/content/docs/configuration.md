@@ -165,6 +165,8 @@ Common fields:
 - `enabled`: turn automatic restore on or off.
 - `mode`: `Locked` for stable graph selection, or `LatestAll` for floating latest versions.
 - `packagesFolder`: shared symbol package folder, usually `.alpackages`.
+- `overridesFolder`: folder of pre-built `.app` files that replace restored dependencies with the
+  same embedded AppId during config-driven builds; relative to `alwasp.json`.
 - `feeds`, `nugetConfig`, `authMode`, `feedTokenEnv`: private feed and authentication settings.
 - `country`: optional Business Central localization code for Microsoft symbols.
 
@@ -269,7 +271,7 @@ project.
 
 `changeDetection.includeDependencies` remains accepted as a deprecated alias for `includeDependents`. Use `includeDependents` in new and updated configurations; it wins if both names are present.
 
-### `translations` — Pro
+### `translations`
 
 Translation coverage settings used by [`alwasp validate translations`](/docs/translations/).
 Strictness is repository-wide; individual apps may only opt out or narrow their language list.

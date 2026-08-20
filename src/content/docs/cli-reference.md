@@ -6,9 +6,6 @@ order: 7
 
 # CLI Reference
 
-Commands and options marked **Pro** require a Pro license — see
-[Editions & Licensing](/docs/editions/).
-
 ## Global
 
 ```bash
@@ -16,7 +13,7 @@ alwasp --help
 alwasp --version
 ```
 
-Every command also accepts, **Pro** only:
+Every command also accepts:
 
 - `--format <text|json|ndjson>` — `text` (default) is unchanged human output; `json` prints one
   result document to stdout with human output moved to stderr; `ndjson` (alias `jsonl`) streams
@@ -32,8 +29,8 @@ alwasp build release --format json --result-file .output/build-result.json
 ```
 
 The exit code and default text output are unchanged by `--format`; the result document just makes
-them explainable. `compare --json` and config-driven build manifests are separate, Free,
-command-specific JSON outputs that predate this universal mechanism.
+them explainable. `compare --json` and config-driven build manifests are separate,
+command-specific JSON outputs.
 
 ## restore
 
@@ -120,7 +117,7 @@ Permanently writes calculated versions and configured internal dependency versio
 
 Both `build --changed-since` and `version apply --changed-since` accept `latest`, `latest:<glob>`, `latest-merge:<text>`, or an explicit tag, branch, or commit. `latest-merge` searches the head's first-parent history for the nearest matching merge message.
 
-## analyze — Pro
+## analyze
 
 ```bash
 alwasp analyze
@@ -178,7 +175,7 @@ Options include:
 
 The command recompiles source with AppSourceCop and remains separate from normal builds.
 
-## validate translations — Pro
+## validate translations
 
 ```bash
 alwasp validate translations

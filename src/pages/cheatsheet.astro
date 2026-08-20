@@ -36,14 +36,14 @@ const commandGroups = [
     ]
   },
   {
-    eyebrow: "Verify · Pro",
+    eyebrow: "Verify",
     title: "Analyze and gate releases",
     tone: "border-mint-700 bg-mint-100/40",
     commands: [
       ["Impact of a change", "alwasp analyze ci --changed-since latest"],
       ["Translation coverage", "alwasp validate translations --fail-on needs-review"],
       ["Compare packages", "alwasp compare old.app new.app --json out.json"],
-      ["Install Pro", "dotnet tool install left-code.AlWasp.Pro --tool-path ~/.alwasp-tools/pro"]
+      ["Structured output", "alwasp restore --format json"]
     ]
   }
 ];
@@ -69,7 +69,7 @@ const changeRefs = [
           <div class="flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-wasp-300">
             <span>ALWasp field guide</span>
             <span class="h-px w-12 bg-wasp-300/60"></span>
-            <span class="text-ink-200">v0.2.0</span>
+            <span class="text-ink-200">v0.2.1</span>
           </div>
           <h1 class="mt-5 text-4xl font-semibold tracking-tight sm:text-6xl">Build AL without breaking your flow.</h1>
           <p class="mt-5 max-w-3xl text-lg leading-8 text-ink-200">
@@ -272,13 +272,12 @@ const changeRefs = [
             <span class="rounded-md bg-mint-100 px-2 py-1 text-center font-mono font-bold text-mint-700">0</span><span class="self-center pl-3 text-ink-700">Success / compare completed / no threshold hit</span>
             <span class="rounded-md bg-wasp-100 px-2 py-1 text-center font-mono font-bold text-wasp-700">1</span><span class="self-center pl-3 text-ink-700">Invalid input or operation failed</span>
             <span class="rounded-md bg-ink-900 px-2 py-1 text-center font-mono font-bold text-white">2</span><span class="self-center pl-3 text-ink-700">Translation gate failed or tool update found</span>
-            <span class="rounded-md bg-mint-700 px-2 py-1 text-center font-mono font-bold text-white">3</span><span class="self-center pl-3 text-ink-700">Pro command: no usable license (Pro only)</span>
           </div>
         </article>
       </section>
 
       <div class="flex flex-col gap-3 border-t border-ink-200 pt-6 text-sm text-ink-500 sm:flex-row sm:items-center sm:justify-between">
-        <span>ALWasp cheatsheet · documentation for v0.2.0</span>
+        <span>ALWasp cheatsheet · documentation for v0.2.1</span>
         <div class="flex gap-4 font-semibold">
           <a href="/docs/getting-started/" class="text-mint-700 hover:underline">Getting started</a>
           <a href="/examples/" class="text-mint-700 hover:underline">Examples</a>

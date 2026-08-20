@@ -25,45 +25,28 @@ Program.cs
 ├── Compatibility/AppSourceCopConfiguration
 ├── Compatibility/CompatibilityWorkspaceDiscovery
 ├── AppPackageIdRewriter
-├── AnalysisEngine (Pro)
-├── TranslationCoverageValidator (Pro)
-└── ProCommandGuard / LicenseVerifier (Pro)
+├── PackageOverrideApplier
+├── AnalysisEngine
+└── TranslationCoverageValidator
 ```
 
-## Editions and product composition
+## Product composition
 
-Starting with `0.2.0`, the codebase is split so the shipped Free and Pro packages are two
-distinct, separately composed hosts rather than one binary with feature flags:
+Starting with `0.2.1`, ALWasp ships as one package and one command surface. The separate Pro host
+and its licensing layer were retired; every command is registered unconditionally by the
+`left-code.AlWasp` package.
 
 | Assembly | Role |
 |---|---|
-| `AlWasp.Core` | CLI-independent implementation shared by every edition — restore, build, versioning, compatibility |
-| `AlWasp.Cli` | Command composition contracts shared by both hosts |
-| `AlWasp.Analysis` | `alwasp analyze` — Pro only |
-| `AlWasp.Translations` | `alwasp validate translations` — Pro only |
-| `AlWasp.Automation` | Universal `--format json/ndjson` and `--result-file` — Pro only |
-| `AlWasp.Licensing` | License envelope parsing, ECDSA verification, discovery — referenced only by `AlWasp.Pro` |
-| `AlWasp.Free` | The packable Free host (`left-code.AlWasp`); registers no Analysis, Translations, or Automation module |
-| `AlWasp.Pro` | The packable Pro host (`left-code.AlWasp.Pro`); Free's command surface plus the Pro-classified modules |
+| `AlWasp.Core` | CLI-independent restore, build, versioning, and compatibility implementation |
+| `AlWasp.Cli` | Command composition contracts and shared command modules |
+| `AlWasp.Analysis` | `alwasp analyze` static source analysis |
+| `AlWasp.Translations` | `alwasp validate translations` XLIFF coverage validation |
+| `AlWasp.Automation` | Universal `--format json/ndjson` and `--result-file` output |
+| `AlWasp` | The packable host (`left-code.AlWasp`) that registers every module |
 
-`AlWasp.Pro`'s Free-surface prefix is required to be the exact same ordered sequence of
-`AlWasp.Cli` module types Free registers, so a Free command behaves identically whichever
-package runs it. See [Editions & Licensing](/docs/editions/) for the resulting command boundary.
-
-## Licensing
-
-`AlWasp.Licensing` verifies a signed license envelope entirely offline — no network call, no
-phone-home. Verification: parse a bounded envelope/payload (duplicate-key rejection, size cap),
-resolve the envelope's `keyId`/algorithm against a small embedded key ring, verify an ECDSA
-P-256/SHA-256 signature over the byte-exact canonical payload encoding via the .NET BCL, then
-check product/edition/validity against an injectable UTC clock. The result is always one of a
-fixed set of `LicenseStatus` values, and diagnostics never carry the organization name, license
-ID, or raw envelope/payload/signature bytes.
-
-`ProCommandGuard` combines discovery (the fixed six-source precedence — see
-[Editions & Licensing](/docs/editions/)) and verification behind one call that a Pro command
-handler gates its side effects on. A missing or failing license produces the reserved exit code
-`3` before any handler side effect runs.
+The package ID and `alwasp` command did not change from earlier releases, so existing global and
+explicit-tool-path installations update in place.
 
 ## Restore pipeline
 
@@ -86,10 +69,11 @@ Workspace restore aggregates dependencies across all workspace projects, emits i
 5. Resolve change detection through local git
 6. Plan project versions, internal dependency versions, Application Insights, resource exposure, and preprocessor symbol changes
 7. Run restore for selected projects
-8. Temporarily patch required `app.json` files
-9. Compile grouped temporary workspaces
-10. Restore original `app.json` files
-11. Write manifest and print summary
+8. Apply configured package overrides by embedded AppId
+9. Temporarily patch required `app.json` files
+10. Compile grouped temporary workspaces
+11. Restore original `app.json` files
+12. Write manifest and print summary
 
 ## Version apply pipeline
 
@@ -105,7 +89,7 @@ Release-period planning switches on the Friday closest to the 15th of each month
 
 `alwasp validate compatibility` prepares an isolated current package cache and a historical AppSourceCop baseline cache, temporarily overlays `AppSourceCop.json`, and invokes `alc`. Multi-app directory mode discovers projects and packages by app ID, calculates the required local dependency closure, and validates in topological order.
 
-## Source analysis pipeline (Pro)
+## Source analysis pipeline
 
 `AnalysisEngine` reads `.al` source through a tokenizer and git alone — it never invokes a
 compiler or restores symbols. For each selected project it parses every file at the head
@@ -119,7 +103,7 @@ from a changed object to everything that references it — to produce the affect
 impacted-tests, and public-API sections. See [Source Analysis](/docs/analyze/) for the full
 section list, object identity rules, and the versioned report contract.
 
-## Translation validation pipeline (Pro)
+## Translation validation pipeline
 
 `TranslationCoverageValidator` reads only XLIFF files — no compiler, symbol restore, or Business
 Central environment. For each selected project it parses the generated `Translations/<App>.g.xlf`
