@@ -300,8 +300,8 @@
         },
         "source": {
           "type": "string",
-          "enum": ["literal", "environment", "environmentByProject"],
-          "description": "Where to resolve the Application Insights value from. 'literal' uses 'value' directly. 'environment' reads a single environment variable named by 'environmentVariable'. 'environmentByProject' looks up the project id in 'environmentVariables' to find which environment variable to read."
+          "enum": ["literal", "environment", "environmentByProject", "literalByProject"],
+          "description": "Where to resolve the Application Insights value from. 'literal' uses 'value' directly. 'environment' reads a single environment variable named by 'environmentVariable'. 'environmentByProject' looks up the project id in 'environmentVariables' to find which environment variable to read. 'literalByProject' looks up the project id directly in 'values' to find the literal value to write, with no environment-variable indirection."
         },
         "mode": {
           "type": "string",
@@ -323,6 +323,13 @@
         "value": {
           "type": "string",
           "description": "Used when source is 'literal': the literal value to write. May be empty to intentionally write an empty value (no Application Insights)."
+        },
+        "values": {
+          "type": "object",
+          "description": "Used when source is 'literalByProject': maps a project id directly to the literal value to write for it. Unlike 'environmentVariables', there is no environment-variable indirection - the mapped string is written to app.json as-is.",
+          "additionalProperties": {
+            "type": "string"
+          }
         }
       }
     },
@@ -454,6 +461,18 @@
         "baseline": {
           "type": "string",
           "description": "Path to the previous compiled .app package used by AppSourceCop. Relative to alwasp.json."
+        }
+      }
+    },
+    "profileCompatibilityConfig": {
+      "type": "object",
+      "description": "Baseline-bound AppSourceCop behavior for a build profile. When enabled, selected apps with compatibility.baseline are compiled against that baseline; selected projects without a baseline are compiled normally.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Compile apps that declare compatibility.baseline with AppSourceCop configured against that baseline. Implies AppSourceCop for those apps only."
         }
       }
     },
@@ -673,6 +692,10 @@
         "outputSuffix": {
           "type": "string",
           "description": "Cosmetic suffix appended to each compiled .app file name produced by this profile, before the .app extension (e.g. '_develop' produces 'Publisher_Name_1.0.0.0_develop.app'). Affects the file name only — not the app identity inside the manifest — so it is a label for distinguishing artifacts, such as a debug build intended for development containers. Must be a safe filename fragment: no path separators or characters that are invalid in a file name."
+        },
+        "compatibility": {
+          "$ref": "#/$defs/profileCompatibilityConfig",
+          "description": "Enables baseline-bound AppSourceCop compilation for this profile without affecting other profiles."
         },
         "codeCop": {
           "type": "boolean",
