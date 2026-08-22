@@ -398,7 +398,7 @@
         },
         "languages": {
           "type": "array",
-          "description": "Language tags every checked app must ship, e.g. [\"da-DK\", \"de-DE\"]. A required language without a translation file is reported as missing. Languages present in a project but not listed here are still checked for untranslated units.",
+          "description": "Language tags to check and that every checked app must ship, e.g. [\"da-DK\", \"de-DE\"]. A selected language without a translation file is reported as missing. Translation files for languages not listed here are excluded. When omitted or empty, every discovered language is checked.",
           "items": {
             "type": "string"
           }
@@ -445,7 +445,7 @@
         },
         "languages": {
           "type": "array",
-          "description": "Language tags this app must ship. Replaces the shared list when non-empty.",
+          "description": "Language tags to check and that this app must ship. Replaces the shared list when non-empty; translation files for other languages are excluded.",
           "items": {
             "type": "string"
           }
