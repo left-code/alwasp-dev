@@ -107,7 +107,53 @@ alwasp validate compatibility release
 alwasp validate compatibility --profile appsource
 ```
 
-Compatibility validation always enables AppSourceCop for this command. It remains separate from `alwasp build`, so running both stages intentionally compiles the source twice.
+Compatibility validation always enables AppSourceCop for this command. By default it remains separate from `alwasp build`, so running both stages intentionally compiles the source twice — unless the profile opts into build-integrated validation, below.
+
+`validate compatibility` temporarily applies the effective build-time `applicationInsights`
+setting to each selected project's `app.json` before compiling, and restores the original file
+afterward. This matches the `app.json` state the following `build` will produce, so AppSourceCop
+does not raise a false `AS0092` warning about a connection string or instrumentation key that is
+intentionally injected by the build.
+
+## Profile-bound baseline validation
+
+A profile can fold compatibility validation directly into its normal `alwasp build`, so the build
+output *is* the compatibility-validated artifact instead of a separate, duplicate compile:
+
+```json
+{
+  "apps": [
+    {
+      "id": "Broker",
+      "path": "./Broker",
+      "compatibility": { "baseline": "./previous/Broker.app" }
+    }
+  ],
+  "profiles": {
+    "release": {
+      "include": "apps",
+      "outFolder": "output/release",
+      "compatibility": { "enabled": true }
+    }
+  }
+}
+```
+
+```bash
+alwasp build release
+```
+
+With `compatibility.enabled: true`, apps in the profile's selection that declare
+`compatibility.baseline` are compiled once with AppSourceCop bound to that baseline, and the
+successful package is collected through the profile's ordinary `outFolder`/`outputSuffix` flow —
+eliminating the `validate compatibility` followed by `build` loop. Selected apps without a
+baseline are compiled normally, not skipped. Compatibility is scoped to the profile: other
+profiles keep their configured `appSourceCop` setting and are never implicitly baseline-checked.
+Historical dependencies use an isolated temporary cache, and a user-owned `AppSourceCop.json` is
+restored byte-for-byte after every compile group.
+
+Use the standalone `alwasp validate compatibility [targetOrProfile]` command instead when
+compatibility must be checked independently of — or more often than — the build itself.
 
 ## Microsoft symbol cache safety
 

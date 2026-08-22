@@ -81,7 +81,38 @@ An app entry can identify the previous compiled package used by config-driven Ap
 }
 ```
 
-The baseline path is resolved relative to `alwasp.json`. It is consumed by `alwasp validate compatibility [targetOrProfile]`, not by `alwasp build`. Projects selected by the target/profile without a configured baseline are skipped by compatibility validation.
+The baseline path is resolved relative to `alwasp.json`. By default it is consumed only by `alwasp validate compatibility [targetOrProfile]`; a profile can opt its normal `build` into the same validation (see below).
+
+## Profile-bound compatibility validation
+
+A profile can make its normal build output the authoritative compatibility-validated artifact,
+instead of running `validate compatibility` as a separate step:
+
+```json
+{
+  "apps": [
+    {
+      "id": "Broker",
+      "path": "./Broker",
+      "compatibility": { "baseline": "./previous/Broker.app" }
+    }
+  ],
+  "profiles": {
+    "release": {
+      "include": "apps",
+      "outFolder": "output/release",
+      "compatibility": { "enabled": true }
+    }
+  }
+}
+```
+
+For `release`, apps declaring `compatibility.baseline` are compiled once with AppSourceCop bound
+to that baseline, and the successful package is collected through the profile's normal
+`outFolder`/`outputSuffix` flow. `compatibility.enabled` implies AppSourceCop only for matched
+apps; selected apps without a baseline are compiled normally. Other profiles are unaffected, and
+a user-owned `AppSourceCop.json` is restored byte-for-byte after each compile group. See
+[Compatibility](/docs/compatibility/#profile-bound-baseline-validation) for the full behavior.
 
 ## `defaults`
 
@@ -240,11 +271,15 @@ Temporarily writes Application Insights settings into `app.json`.
 Key fields:
 
 - `enabled`: turn injection on or off.
-- `source`: `literal`, `environment`, or `environmentByProject`.
+- `source`: `literal`, `environment`, `environmentByProject`, or `literalByProject`.
 - `mode`: `auto`, `connectionString`, or `instrumentationKey`.
 - `value`: used with `source: literal`.
 - `environmentVariable`: used with `source: environment`.
 - `environmentVariables`: project id to environment variable map for `source: environmentByProject`.
+- `values`: project id to literal value map for `source: literalByProject`. Unlike
+  `environmentVariables`, there is no environment-variable indirection — the mapped string is
+  written to `app.json` as-is, for apps with their own fixed, permanently-assigned Application
+  Insights resource.
 
 `mode: auto` chooses between `applicationInsightsConnectionString` and `applicationInsightsKey` from the app's `runtime`, falling back to `workspace.bcVersion`. Secret values are never written to the manifest or logs.
 
@@ -279,7 +314,7 @@ Strictness is repository-wide; individual apps may only opt out or narrow their 
 | Field | Purpose |
 |---|---|
 | `enabled` | Set to `false` to exclude every app from the check. Default `true` |
-| `languages` | Language tags every checked app must ship, e.g. `["da-DK", "de-DE"]` |
+| `languages` | Language tags every checked app must ship, e.g. `["da-DK", "de-DE"]`. Also scopes the check: when non-empty, translation files for languages not listed are excluded from validation entirely instead of only failing to satisfy the requirement. Omit or leave empty to check every discovered language |
 | `untranslatedPlaceholders` | Target texts meaning "not translated yet", e.g. XLIFF Sync's `%EMPTY%` marker. Default `["%EMPTY%"]`; set to `[]` to disable |
 | `checkPlaceholders` | Require matching `%1`/`{0}`/`#`-style placeholders between source and target. Default `false` |
 | `failOn` | `none`, `missingLanguage`, `missingUnit`, `untranslated` (default), or `needsReview` |

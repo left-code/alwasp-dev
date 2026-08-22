@@ -19,6 +19,11 @@ alwasp validate translations --project-root ./src --json output/translations.jso
 
 ## Findings
 
+A non-empty `--languages` / `translations.languages` list is both the required set and the
+*scope* of the check: translation files for languages outside that list are excluded from
+validation entirely rather than being checked and potentially failing on their own account.
+Leaving the list empty or omitted checks every discovered language, as before.
+
 | Finding | Meaning |
 |---|---|
 | missing language file | A required language (`--languages` / `translations.languages`) has no `.xlf` file |
@@ -158,8 +163,8 @@ for a complete picture.
 ```
 
 Strictness (`failOn`, `minCoverage`, `requireGeneratedFile`) is repository-wide. An app may only
-opt out of the check or declare its own language list, which replaces the shared one. CLI options
-override configured values. Projects selected by a target or profile follow the same `include`
+opt out of the check or declare its own language list, which replaces the shared one and scopes
+validation to it the same way. CLI options override configured values. Projects selected by a target or profile follow the same `include`
 model as `build`, so `alwasp validate translations ci` checks exactly the projects that target
 builds. Required languages apply to `apps` entries only — test projects are checked solely on the
 translation files they actually contain.

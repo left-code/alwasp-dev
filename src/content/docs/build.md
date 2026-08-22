@@ -42,6 +42,13 @@ Version-only changes are applied surgically: ALWasp replaces only the relevant t
 
 Config-driven `defines` are written per project into `app.json` `preprocessorSymbols` and unioned with symbols already present in the source file. This avoids workspace-wide `/define` arguments and allows projects with different define sets to stay in the same compile group when the rest of their compiler settings match.
 
+## Compatibility-validated builds
+
+A profile can set `compatibility.enabled: true` so its normal build compiles apps declaring
+`compatibility.baseline` with AppSourceCop bound to that baseline, making the build's own output
+the compatibility-validated artifact instead of a separate `validate compatibility` step. See
+[Compatibility](/docs/compatibility/#profile-bound-baseline-validation).
+
 ## Warning policy
 
 `altool workspace compile` has no treat-warnings-as-errors flag. ALWasp enforces `warningPolicy.treatWarningsAsErrors` after compile by parsing the group's log files. If non-suppressed warnings remain, ALWasp forces that group to fail and prints the offending warnings to the console, even without `--diagnostics`.
@@ -58,7 +65,7 @@ Config-driven `defines` are written per project into `app.json` `preprocessorSym
 
 ## Manifests
 
-Config-driven builds can write a structured manifest with selected projects, groups, effective settings, diagnostics, timestamps, and per-project transformation traceability. Each project records its original and effective version plus `internalDependencyVersions`, which lists every internal dependency version applied for that build without exposing unrelated package data.
+Config-driven builds can write a structured manifest with selected projects, groups, effective settings, diagnostics, timestamps, and per-project transformation traceability. Each project records its original and effective version plus `internalDependencyVersions`, which lists every internal dependency version applied for that build without exposing unrelated package data. Each profile entry also records an `artifactType` of `"apps"`, `"tests"`, or `"mixed"`, derived from its selected projects, so a CI pipeline can distinguish application and test output profiles without relying on profile names, selection syntax, or output-folder conventions.
 
 ```bash
 alwasp build ci --manifest output/build-manifest.json

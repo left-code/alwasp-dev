@@ -187,7 +187,8 @@ alwasp validate translations --project-root ./src --json output/translations.jso
 Options:
 
 - `--project <dir>` / `--project-root <dir>`, or `[targetOrProfile]` / `--config` / `--profile`
-- `--languages <tag,...>` required language tags, overriding `translations.languages`
+- `--languages <tag,...>` required language tags, overriding `translations.languages`; when
+  non-empty, also scopes the check to just these languages
 - `--check-placeholders` requires matching `%1`/`{0}`/`#`-style placeholders between source and target
 - `--fail-on <none|missing-language|missing-unit|untranslated|needs-review>` — default `untranslated`
 - `--min-coverage <percent>` per-language coverage floor
