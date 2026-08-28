@@ -42,6 +42,43 @@ Version-only changes are applied surgically: ALWasp replaces only the relevant t
 
 Config-driven `defines` are written per project into `app.json` `preprocessorSymbols` and unioned with symbols already present in the source file. This avoids workspace-wide `/define` arguments and allows projects with different define sets to stay in the same compile group when the rest of their compiler settings match.
 
+## Plan-based builds
+
+`alwasp plan [targetOrProfile] --changed-since <ref> [--plan-file <path>]` creates a deterministic,
+timestamp-free JSON plan without compiling anything: directly changed projects, downstream
+applications, affected test apps, and the internal prerequisites needed to compile them, plus
+dependency build levels, deployment order, repository commit IDs, changed-file hashes, the
+configuration hash, and an input fingerprint. A change to `alwasp.json`, a configured NuGet
+config, or an active ruleset selects the complete requested target; no relevant changes produce a
+successful empty plan; dependency cycles fail plan creation. The default output is
+`.output/alwasp-plan.json`.
+
+```bash
+alwasp plan ci --changed-since origin/main --plan-file .output/alwasp-plan.json
+alwasp build --plan .output/alwasp-plan.json
+```
+
+`alwasp build --plan <path>` consumes that plan instead of resolving target/profile/change
+selection itself. It fails closed if the schema major version or fingerprint is invalid, or if the
+configuration, repository HEAD, changed-file set/content, or planned profiles/project App IDs have
+drifted since the plan was created. It restores, transforms, and compiles only each profile's
+planned projects; an empty plan succeeds without invoking restore or compilation. `--plan` cannot
+be combined with a positional target, `--profile`, or `--changed-since`. Builds without `--plan`
+keep their existing behavior. See [CI/CD](/docs/ci-cd/#deterministic-ci-plans).
+
+## Clean builds
+
+`--clean` on `alwasp build` (single-project and config-driven) and `alwasp workspace build` removes
+the prior ALWasp package cache, compiled output, compiler log, and build-manifest artifacts before
+restoring and compiling. Files in custom output and log directories that ALWasp did not produce are
+left in place.
+
+```bash
+alwasp build --clean
+alwasp build ci --clean
+alwasp workspace build --clean
+```
+
 ## Compatibility-validated builds
 
 A profile can set `compatibility.enabled: true` so its normal build compiles apps declaring

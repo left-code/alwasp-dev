@@ -66,6 +66,10 @@ Config-driven options include:
 - `--manifest [path]`
 - `--continue-on-error`
 - `--changed-since <ref>`
+- `--plan <path>` — consume a plan from `alwasp plan` instead of resolving selection directly;
+  cannot be combined with a positional target, `--profile`, or `--changed-since`
+- `--clean` — remove prior ALWasp package cache, compiled output, compiler log, and
+  build-manifest artifacts before restoring and compiling
 - restore/feed options
 
 Single-project options include:
@@ -82,6 +86,28 @@ Single-project options include:
 - `--define <symbol>`
 - `--features <feature>`
 - analyzer flags
+
+## plan
+
+```bash
+alwasp plan ci --changed-since origin/main --plan-file .output/alwasp-plan.json
+alwasp build --plan .output/alwasp-plan.json
+```
+
+Options:
+
+- `--config <path>` / `--profile <name>`
+- `--changed-since <ref>` (required)
+- `--plan-file <path>` — defaults to `.output/alwasp-plan.json`; relative paths resolve from the
+  current directory
+
+Creates a deterministic, timestamp-free CI plan without compiling: directly changed projects,
+downstream applications, affected test apps, and the internal prerequisites needed to compile
+them, plus dependency build levels, deployment order, repository commit IDs, changed-file hashes,
+the configuration hash, and an input fingerprint. A change to `alwasp.json`, a configured NuGet
+config, or an active ruleset selects the complete requested target; no relevant changes produce a
+successful empty plan; dependency cycles fail plan creation. Consume the plan with
+`alwasp build --plan <path>`. See [CI/CD](/docs/ci-cd/#deterministic-ci-plans).
 
 ## init
 
@@ -221,6 +247,8 @@ Common `workspace build` options:
 - `--log-directory <dir>`
 - `--diagnostics`
 - `--manifest [path]`
+- `--clean` — remove prior ALWasp package cache, compiled output, compiler log, and
+  build-manifest artifacts before restoring and compiling
 
 ## tools update
 

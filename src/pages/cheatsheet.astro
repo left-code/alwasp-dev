@@ -21,7 +21,10 @@ const commandGroups = [
       ["Target or profile", "alwasp build ci"],
       ["One profile", "alwasp build --profile appsource"],
       ["Changed projects", "alwasp build ci --changed-since latest:v*"],
-      ["Write manifest", "alwasp build ci --manifest output/build.json"]
+      ["Write manifest", "alwasp build ci --manifest output/build.json"],
+      ["CI plan", "alwasp plan ci --changed-since origin/main"],
+      ["Build from plan", "alwasp build --plan .output/alwasp-plan.json"],
+      ["Clean build", "alwasp build ci --clean"]
     ]
   },
   {
@@ -69,7 +72,7 @@ const changeRefs = [
           <div class="flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-wasp-300">
             <span>ALWasp field guide</span>
             <span class="h-px w-12 bg-wasp-300/60"></span>
-            <span class="text-ink-200">v0.2.4</span>
+            <span class="text-ink-200">v0.3.0</span>
           </div>
           <h1 class="mt-5 text-4xl font-semibold tracking-tight sm:text-6xl">Build AL without breaking your flow.</h1>
           <p class="mt-5 max-w-3xl text-lg leading-8 text-ink-200">
@@ -277,7 +280,7 @@ const changeRefs = [
       </section>
 
       <div class="flex flex-col gap-3 border-t border-ink-200 pt-6 text-sm text-ink-500 sm:flex-row sm:items-center sm:justify-between">
-        <span>ALWasp cheatsheet · documentation for v0.2.4</span>
+        <span>ALWasp cheatsheet · documentation for v0.3.0</span>
         <div class="flex gap-4 font-semibold">
           <a href="/docs/getting-started/" class="text-mint-700 hover:underline">Getting started</a>
           <a href="/examples/" class="text-mint-700 hover:underline">Examples</a>
