@@ -6,6 +6,45 @@ order: 10
 
 # Release Notes
 
+## 0.3.0 — 2026-08-28
+
+### Deterministic CI plans
+
+`alwasp plan [targetOrProfile] --changed-since <ref> [--plan-file <path>]` creates a versioned,
+timestamp-free JSON plan without compiling anything. It selects directly changed projects,
+downstream applications, and affected test apps, restores upstream compile prerequisites, and
+records project/AppIds, build and deployment order, repository commits, changed-file hashes, the
+configuration hash, and an input fingerprint. A change to `alwasp.json`, a configured NuGet
+config, or an active ruleset selects the complete requested target; no relevant changes produce a
+successful empty plan; dependency cycles fail plan creation. The default output is
+`.output/alwasp-plan.json`.
+
+`alwasp build --plan <path>` consumes a generated plan instead of resolving selection itself. It
+fails closed on schema, fingerprint, configuration, Git HEAD, changed-file set/content, profile,
+project ID, or App ID drift, and restores, transforms, and compiles only each profile's planned
+projects; an empty plan is a successful no-op. Builds without `--plan` are unchanged. See
+[CI/CD](/docs/ci-cd/#deterministic-ci-plans) and [Build](/docs/build/#plan-based-builds).
+
+### Clean builds
+
+`--clean` on `alwasp build` and `alwasp workspace build` removes the prior ALWasp package cache,
+compiled output, compiler log, and build-manifest artifacts before restoring and compiling, while
+leaving unrelated files in custom output and log directories untouched. See
+[Build](/docs/build/#clean-builds).
+
+## 0.2.5 — 2026-08-22
+
+### Smaller, non-duplicated result files
+
+`analyze`, `validate translations`, and config-driven `build` no longer embed their full
+report/manifest a second time inside the `--result-file` document when a separate report or
+manifest file was also produced (`--json`, or `workspace.manifest` for `build`). A
+`jsonReportPath`/`manifestPath` pointer is written instead when both files exist; the full object
+is still embedded directly when no separate file was requested.
+
+`validate translations --json` now writes `translations-report.json` in camelCase, matching every
+other JSON report and manifest this CLI produces.
+
 ## 0.2.4 — 2026-08-22
 
 ### Translation validation respects the configured language scope

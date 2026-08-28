@@ -98,6 +98,28 @@ ALWasp does not fetch refs or history. Make sure your pipeline checks out the ta
           fetch-depth: 0
 ```
 
+## Deterministic CI plans
+
+`build --changed-since` still builds the full selected target; use `plan` for an explicit
+changed-only CI selection instead:
+
+```bash
+alwasp plan ci --changed-since origin/main --plan-file .output/alwasp-plan.json
+alwasp build --plan .output/alwasp-plan.json
+```
+
+`alwasp plan` writes a deterministic, timestamp-free JSON document selecting directly changed
+projects, downstream applications, affected test apps, and the internal prerequisites needed to
+compile them, along with dependency build levels, deployment order, repository commit IDs,
+changed-file hashes, the configuration hash, and an input fingerprint. A change to `alwasp.json`,
+a configured NuGet config, or an active ruleset selects the complete requested target; no relevant
+changes produce a successful empty plan; dependency cycles fail plan creation.
+
+`alwasp build --plan <path>` consumes that plan and fails closed if the schema, fingerprint,
+configuration, repository HEAD, changed-file set/content, or planned profiles/project App IDs have
+drifted since the plan was created — so a stale plan can never silently build the wrong thing. It
+cannot be combined with a positional target, `--profile`, or `--changed-since`.
+
 ## Permanent version updates
 
 Use `version apply` as a separate step when you want version changes committed by your pipeline:
