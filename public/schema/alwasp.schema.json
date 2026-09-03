@@ -220,9 +220,9 @@
         },
         "releaseType": {
           "type": "string",
-          "enum": ["Release", "Preview", "None"],
+          "enum": ["Release", "Preview", "Dev", "None"],
           "default": "None",
-          "description": "Release type used to compute the new version from the current version and date. 'None' leaves the version unchanged."
+          "description": "Release type used to compute the new version from the current version and date. 'None' leaves the version unchanged. 'Dev' keeps Major.Minor.Build from the current version and only forces Revision to 1 (never higher, never lower once already at 1+) — a fixed marker for non-release builds, distinct from Release/Preview's always-0 revision."
         },
         "source": {
           "type": "string",
