@@ -762,6 +762,10 @@
           "$ref": "#/$defs/applicationInsightsConfig",
           "description": "Per-profile override of the top-level 'applicationInsights' settings. Unset fields fall back to the top-level config."
         },
+        "translations": {
+          "$ref": "#/$defs/translationsConfig",
+          "description": "Per-profile override of the top-level 'translations' settings. Unset fields fall back to the top-level config, then to a hard default. A project's own app-entry 'translations' (enabled/languages only) still takes precedence over this."
+        },
         "overrides": {
           "type": "object",
           "description": "Per-project setting overrides for this profile, keyed by project id. Override values take precedence over all profile-level settings.",
