@@ -228,7 +228,8 @@ Key choices:
 - `source`: `appJson`, `nuget`, or `explicit`.
 - `explicitVersion`: required when `source` is `explicit`.
 - `fallbackToAppJson`: when `source` is `nuget`, use the current `app.json` version if no published package is found.
-- `releaseType`: `Release`, `Preview`, or `None`.
+- `releaseType`: `Release`, `Preview`, `Dev`, or `None`. `Dev` preserves Major.Minor.Build and
+  forces Revision to at least `1`, providing a stable non-release marker.
 - `applyTo`: `all` or `changedOnly`.
 - `includeDependencies`: update internal dependency entries to the calculated versions of selected projects; defaults to `true`.
 - `dependencyUpdateScope`: `directlyChanged` (default) updates a reference only when *both* the consuming project and the dependency project have direct git changes; `allVersioned` propagates every selected calculated version regardless.
@@ -309,7 +310,8 @@ project.
 ### `translations`
 
 Translation coverage settings used by [`alwasp validate translations`](/docs/translations/).
-Strictness is repository-wide; individual apps may only opt out or narrow their language list.
+Settings may be defined at the top level and overridden per profile. An app's own
+`translations.enabled` / `translations.languages` values take precedence over its profile.
 
 | Field | Purpose |
 |---|---|

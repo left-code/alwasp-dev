@@ -101,6 +101,8 @@ applied when restore itself is disabled with `restore.enabled: false`.
 
 - Overrides and restored packages are matched by the AppId embedded in `SymbolReference.json`,
   never by file name.
+- If the cache contains multiple packages with that AppId, ALWasp deterministically replaces the
+  highest version. This avoids filesystem enumeration order deciding which package is overridden.
 - A matching override always wins, regardless of version. A lower override version is accepted
   with a warning.
 - An override with no matching package in the cache is not injected; it is reported as unmatched.

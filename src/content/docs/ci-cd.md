@@ -118,7 +118,8 @@ changes produce a successful empty plan; dependency cycles fail plan creation.
 `alwasp build --plan <path>` consumes that plan and fails closed if the schema, fingerprint,
 configuration, repository HEAD, changed-file set/content, or planned profiles/project App IDs have
 drifted since the plan was created — so a stale plan can never silently build the wrong thing. It
-cannot be combined with a positional target, `--profile`, or `--changed-since`.
+cannot be combined with a positional target or `--profile`. `--changed-since` is allowed only for
+the consuming build's changed-only version calculation and must resolve to the plan's recorded base.
 
 ## Permanent version updates
 

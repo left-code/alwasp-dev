@@ -67,7 +67,8 @@ Config-driven options include:
 - `--continue-on-error`
 - `--changed-since <ref>`
 - `--plan <path>` — consume a plan from `alwasp plan` instead of resolving selection directly;
-  cannot be combined with a positional target, `--profile`, or `--changed-since`
+  cannot be combined with a positional target or `--profile`; `--changed-since` may be supplied
+  only to resolve changed-only versioning and must match the plan's recorded base
 - `--clean` — remove prior ALWasp package cache, compiled output, compiler log, and
   build-manifest artifacts before restoring and compiling
 - restore/feed options
@@ -187,19 +188,37 @@ and examples.
 alwasp validate compatibility [targetOrProfile]
 alwasp validate compatibility --project <dir> --baseline <previous.app>
 alwasp validate compatibility --project-root <dir> --baseline-directory <dir>
+alwasp validate compatibility --project-root <dir> --get-baseline-symbols [feed-url]
 ```
 
 Options include:
 
 - `--project <dir>` and `--baseline <app>` for one direct project
 - `--project-root <dir>` and `--baseline-directory <dir>` for recursive multi-app discovery
+- `--get-baseline-symbols [feed-url]` downloads each discovered app's latest stable baseline;
+  omit the URL to use Microsoft AppSourceSymbols
+- `--changed-since <ref>` limits `--project-root` validation to changed apps and their dependents;
+  accepts `latest`, `latest:<glob>`, `latest-merge:<text>`, or a Git ref
 - `--packages <dir>` for current dependency packages
 - `--ruleset <file>` for compiler diagnostic severity overrides
+- `--bc-target <current|next-minor|next-major>`, `--bc-version <version>`, and
+  `--bc-country <code>` select the Business Central artifact used for validation
 - `--config <file>` / `--profile <name>` in config-driven mode
 - restore/feed/authentication options
 - `-v|--verbose` and `-q|--quiet`
 
 The command recompiles source with AppSourceCop and remains separate from normal builds.
+
+## artifacts download
+
+```bash
+alwasp artifacts download --target next-major --country DE
+alwasp artifacts download --version 27.1 --output .alwasp/artifacts
+```
+
+Downloads, verifies, and caches Business Central artifacts independently of compatibility
+validation. Use `--target <current|next-minor|next-major>` or pin `--version <version>`;
+`--country <code>` selects localization and defaults to `W1`.
 
 ## validate translations
 

@@ -63,7 +63,9 @@ selection itself. It fails closed if the schema major version or fingerprint is 
 configuration, repository HEAD, changed-file set/content, or planned profiles/project App IDs have
 drifted since the plan was created. It restores, transforms, and compiles only each profile's
 planned projects; an empty plan succeeds without invoking restore or compilation. `--plan` cannot
-be combined with a positional target, `--profile`, or `--changed-since`. Builds without `--plan`
+be combined with a positional target or `--profile`. A supplied `--changed-since` affects only
+`versioning.applyTo: changedOnly`; it never changes the plan's project selection. ALWasp resolves
+it and fails closed if its base differs from the plan's recorded base. Builds without `--plan`
 keep their existing behavior. See [CI/CD](/docs/ci-cd/#deterministic-ci-plans).
 
 ## Clean builds

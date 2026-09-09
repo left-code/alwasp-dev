@@ -6,6 +6,65 @@ order: 10
 
 # Release Notes
 
+## 0.3.8 — 2026-09-09
+
+### Changed-only compatibility validation
+
+`validate compatibility --project-root` accepts `--changed-since <ref>` to validate changed apps
+and their downstream dependents. Unchanged local prerequisites are compiled without AppSourceCop.
+References may be `latest`, `latest:<glob>`, `latest-merge:<text>`, or an explicit Git ref.
+
+## 0.3.7 — 2026-09-08
+
+### CI compiler annotations
+
+Compatibility validation and single-project builds now emit native Azure Pipelines and GitHub
+Actions compiler diagnostic annotations, matching workspace and config-driven builds.
+
+## 0.3.6 — 2026-09-08
+
+### Downloadable compatibility baselines
+
+`validate compatibility --project-root ... --get-baseline-symbols [feed-url]` downloads the latest
+stable baselines from Microsoft AppSourceSymbols or a private NuGet feed. See
+[Compatibility](/docs/compatibility/#download-the-latest-stable-baselines).
+
+## 0.3.5 — 2026-09-04
+
+### Deterministic package overrides
+
+When multiple restored packages share an AppId, `restore.overridesFolder` now replaces the highest
+version rather than whichever file happened to be enumerated last.
+
+## 0.3.4 — 2026-09-04
+
+### Profile-specific translation gates
+
+Profiles can override top-level `translations` settings, allowing release profiles to enforce
+different `failOn` or `minCoverage` gates. App-level enabled/language settings still win.
+
+## 0.3.3 — 2026-09-03
+
+### Development versions
+
+`versioning.releaseType: Dev` preserves Major.Minor.Build and forces Revision to at least `1`, a
+fixed marker for non-release builds that must sort above the corresponding release version.
+
+## 0.3.2 — 2026-09-03
+
+### Plan-consumer versioning baseline
+
+`build --plan` accepts `--changed-since` for `versioning.applyTo: changedOnly`. It does not alter
+planned selection and fails if the resolved base differs from the plan's recorded base.
+
+## 0.3.1 — 2026-08-31
+
+### Business Central artifact targeting
+
+Compatibility validation can target `current`, `next-minor`, or `next-major`, pin a concrete BC
+version, and select a country code (default `W1`). `alwasp artifacts download` exposes the same
+verified artifact download and cache workflow independently.
+
 ## 0.3.0 — 2026-08-28
 
 ### Deterministic CI plans

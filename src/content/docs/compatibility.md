@@ -48,6 +48,11 @@ ALWasp temporarily supplies AppSourceCop's baseline identity and cache propertie
 
 `--ruleset` is resolved from the current directory and overrides configured rulesets. In direct mode, omitting it auto-detects `ruleset.json`, then the first `*.ruleset.json` in the project directory.
 
+Use `--bc-target current|next-minor|next-major` to choose the Business Central release used for
+validation, `--bc-version` to pin a concrete release, and `--bc-country` to select localized
+artifacts (default `W1`). ALWasp downloads and caches the matching platform, application symbols,
+and compiler. The same artifact workflow is available separately through `alwasp artifacts download`.
+
 ## Validate a dynamic multi-app repository
 
 ```powershell
@@ -56,6 +61,21 @@ alwasp validate compatibility `
   --baseline-directory .\latest `
   --ruleset .\dyce.ruleset.json
 ```
+
+To validate only apps changed since a Git reference, add `--changed-since`. Downstream apps that
+depend on a changed app are validated too. An unchanged local app needed only to compile a selected
+app is built as a dependency without AppSourceCop:
+
+```powershell
+alwasp validate compatibility `
+  --project-root .\src `
+  --baseline-directory .\latest `
+  --changed-since latest:v* `
+  --ruleset .\dyce.ruleset.json
+```
+
+The reference accepts `latest`, `latest:<glob>`, `latest-merge:<text>`, or an explicit tag, branch,
+or commit. ALWasp reads local Git history and does not fetch missing refs.
 
 Directory mode:
 
@@ -81,6 +101,39 @@ alwasp validate compatibility `
 ```
 
 The final summary separates validation results, prepared local dependencies, skipped new apps, failures, and total processing time.
+
+## Download the latest stable baselines
+
+In directory mode, `--get-baseline-symbols [feed-url]` can download the latest stable published
+symbols instead of reading a pinned `--baseline-directory`:
+
+```powershell
+# Microsoft AppSourceSymbols
+alwasp validate compatibility --project-root .\src --get-baseline-symbols
+
+# A private NuGet feed
+alwasp validate compatibility --project-root .\src `
+  --get-baseline-symbols https://example.com/nuget/v3/index.json
+```
+
+Without a URL, only Microsoft's AppSourceSymbols feed is queried for baselines. An explicit URL
+replaces that baseline feed and also participates in dependency restore. Existing `--pat` /
+`ALWASP_PAT`, `--feed-token-env`, `--nuget-config`, and `--auth-mode` settings apply.
+
+Downloaded packages are matched by app ID, stored temporarily outside the project tree, and
+removed after the run. Apps without a published stable baseline are reported and skipped; no
+matches or a feed/download error fails the command. Baseline versions are independent of the
+current app version and `--bc-target`.
+
+`--get-baseline-symbols` requires `--project-root` and cannot be combined with `--baseline-directory`,
+`--baseline`, `--project`, or config-driven target/profile selection. Prefer a checked-in or
+artifact-provided baseline directory when validation must be reproducible against pinned versions.
+
+## CI diagnostic annotations
+
+In Azure Pipelines and GitHub Actions, compiler diagnostics from compatibility validation are
+emitted as native workflow annotations. Single-project `alwasp build` does the same; no additional
+flag is required. This matches the annotation behavior of workspace and config-driven builds.
 
 ## Config-driven validation
 
