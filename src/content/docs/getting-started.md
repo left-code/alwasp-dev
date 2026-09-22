@@ -6,7 +6,7 @@ order: 1
 
 # Getting Started
 
-ALWasp is a .NET 8 CLI for Microsoft Dynamics 365 Business Central AL projects. It restores symbol packages from NuGet feeds and compiles single-project, workspace, and config-driven AL repositories.
+ALWasp is a .NET 10 CLI for Microsoft Dynamics 365 Business Central AL projects. It restores symbol packages from NuGet feeds and compiles single-project, workspace, and config-driven AL repositories.
 
 ALWasp ships as one `left-code.AlWasp` package. Every command is included and none requires a
 license. See [Installation](/docs/install/) for pinned-version, upgrade, and uninstall examples.
@@ -52,6 +52,9 @@ alwasp  [--format text|json|ndjson] [--result-file <path>]
 ├── validate
 │   ├── compatibility [targetOrProfile]
 │   └── translations [targetOrProfile]       XLIFF coverage gate
+├── translation
+│   ├── prepare <language>                    external translator package
+│   └── validate <path>                       returned XLIFF validation
 ├── tools
 │   └── update [--clean] [--check]
 ├── app

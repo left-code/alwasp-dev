@@ -102,8 +102,10 @@ as a placeholder, which is one reason the rule is opt-in (default `false`) and d
 coverage percentage.
 
 `alwasp validate translations` only reads files — it never syncs or rewrites them. Pair it with
-XLIFF Sync (or its [PowerShell module](https://github.com/rvanbekkum/ps-xliff-sync)) to *create*
-and maintain translations, and use this command as the release gate that verifies the result.
+XLIFF Sync to maintain translations, or use ALWasp's
+[external translation preparation](/docs/translation-preparation/) workflow to create
+deterministic translator packages and strictly validate returned XLIFF. Keep this coverage
+command as the release gate that checks the complete language set.
 
 ## Warning or error
 

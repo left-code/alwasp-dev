@@ -111,6 +111,9 @@ symbols instead of reading a pinned `--baseline-directory`:
 # Microsoft AppSourceSymbols
 alwasp validate compatibility --project-root .\src --get-baseline-symbols
 
+# When the current directory contains app.json, --project-root defaults to .
+alwasp validate compatibility --get-baseline-symbols
+
 # A private NuGet feed
 alwasp validate compatibility --project-root .\src `
   --get-baseline-symbols https://example.com/nuget/v3/index.json
@@ -125,15 +128,24 @@ removed after the run. Apps without a published stable baseline are reported and
 matches or a feed/download error fails the command. Baseline versions are independent of the
 current app version and `--bc-target`.
 
-`--get-baseline-symbols` requires `--project-root` and cannot be combined with `--baseline-directory`,
-`--baseline`, `--project`, or config-driven target/profile selection. Prefer a checked-in or
-artifact-provided baseline directory when validation must be reproducible against pinned versions.
+When the current directory contains `app.json`, `--get-baseline-symbols` defaults the project root
+to that directory and also discovers nested projects. Otherwise, pass `--project-root`. The option
+cannot be combined with `--baseline-directory`, `--baseline`, `--project`, `--config`, or a
+positional target/profile. `--profile <name>` is allowed: it selects Application Insights settings
+from the current directory's `alwasp.json`, but does not limit which directory projects are
+discovered or validated. Without it, the default target supplies those settings.
+
+Prefer a checked-in or artifact-provided baseline directory when validation must be reproducible
+against pinned versions. Application Insights transforms apply consistently to current,
+next-minor, and next-major Business Central targets.
 
 ## CI diagnostic annotations
 
 In Azure Pipelines and GitHub Actions, compiler diagnostics from compatibility validation are
 emitted as native workflow annotations. Single-project `alwasp build` does the same; no additional
 flag is required. This matches the annotation behavior of workspace and config-driven builds.
+Apps without published compatibility baselines are grouped into one counted, collapsible section
+in Azure Pipelines and GitHub Actions logs instead of producing a separate group per app.
 
 ## Config-driven validation
 

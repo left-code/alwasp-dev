@@ -41,7 +41,7 @@ and its licensing layer were retired; every command is registered unconditionall
 | `AlWasp.Core` | CLI-independent restore, build, versioning, and compatibility implementation |
 | `AlWasp.Cli` | Command composition contracts and shared command modules |
 | `AlWasp.Analysis` | `alwasp analyze` static source analysis |
-| `AlWasp.Translations` | `alwasp validate translations` XLIFF coverage validation |
+| `AlWasp.Translations` | XLIFF coverage validation plus external translation preparation and return validation |
 | `AlWasp.Automation` | Universal `--format json/ndjson` and `--result-file` output |
 | `AlWasp` | The packable host (`left-code.AlWasp`) that registers every module |
 

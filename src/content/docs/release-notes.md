@@ -6,6 +6,35 @@ order: 10
 
 # Release Notes
 
+## 0.4.0 — 2026-09-22
+
+### External translation preparation
+
+`alwasp translation prepare` creates deterministic packages containing authoritative source,
+reusable translations, optional secondary-language context, focused Microsoft Business Central
+terminology, unit metadata, and translator instructions. `alwasp translation validate` strictly
+checks returned XLIFF structure, source, metadata, inline codes, and placeholders. ALWasp prepares
+and validates content but does not translate or connect to AI services. See
+[Translation Preparation](/docs/translation-preparation/).
+
+### .NET 10 runtime
+
+ALWasp now targets `net10.0` and requires the .NET 10 runtime. CLI behavior and structured output
+formats are otherwise unchanged. The remaining internal Free/Pro split and obsolete preview
+compatibility machinery were removed without changing commands or exit codes.
+
+## 0.3.9 — 2026-09-10
+
+### Compatibility workflow improvements
+
+- `--get-baseline-symbols` defaults to the current directory when it contains `app.json`.
+- Directory validation accepts `--profile` to choose Application Insights settings independently
+  of the default build target.
+- Application Insights transforms now apply to next-minor and next-major validation targets.
+- Missing published baselines are grouped into one counted, collapsible CI log section.
+- Restore includes the Microsoft Application wrapper required by `app.json`'s `application`
+  property, preventing AL1022 when only Base and System Application symbols were cached.
+
 ## 0.3.8 — 2026-09-09
 
 ### Changed-only compatibility validation

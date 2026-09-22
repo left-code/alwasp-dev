@@ -45,6 +45,8 @@ const commandGroups = [
     commands: [
       ["Impact of a change", "alwasp analyze ci --changed-since latest"],
       ["Translation coverage", "alwasp validate translations --fail-on needs-review"],
+      ["Prepare translation", "alwasp translation prepare fr-FR --context de-DE"],
+      ["Validate returned XLIFF", "alwasp translation validate ./MyApp.fr-FR.xlf"],
       ["Compare packages", "alwasp compare old.app new.app --json out.json"],
       ["Structured output", "alwasp restore --format json"]
     ]
@@ -72,7 +74,7 @@ const changeRefs = [
           <div class="flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-wasp-300">
             <span>ALWasp field guide</span>
             <span class="h-px w-12 bg-wasp-300/60"></span>
-            <span class="text-ink-200">v0.3.8</span>
+            <span class="text-ink-200">v0.4.0</span>
           </div>
           <h1 class="mt-5 text-4xl font-semibold tracking-tight sm:text-6xl">Build AL without breaking your flow.</h1>
           <p class="mt-5 max-w-3xl text-lg leading-8 text-ink-200">
@@ -280,7 +282,7 @@ const changeRefs = [
       </section>
 
       <div class="flex flex-col gap-3 border-t border-ink-200 pt-6 text-sm text-ink-500 sm:flex-row sm:items-center sm:justify-between">
-        <span>ALWasp cheatsheet · documentation for v0.3.8</span>
+        <span>ALWasp cheatsheet · documentation for v0.4.0</span>
         <div class="flex gap-4 font-semibold">
           <a href="/docs/getting-started/" class="text-mint-700 hover:underline">Getting started</a>
           <a href="/examples/" class="text-mint-700 hover:underline">Examples</a>

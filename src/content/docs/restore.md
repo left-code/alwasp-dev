@@ -36,6 +36,7 @@ ALWasp also injects implicit Microsoft dependencies:
 |---|---|
 | System Application | Always added |
 | Base Application | Always added |
+| Application | Added when the `application` property requires Microsoft's wrapper package |
 | System | Uses `Microsoft.Platform.symbols` |
 | Business Foundation | Added for Business Central 26+ |
 

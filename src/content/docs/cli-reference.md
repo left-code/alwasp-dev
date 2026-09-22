@@ -209,6 +209,18 @@ Options include:
 
 The command recompiles source with AppSourceCop and remains separate from normal builds.
 
+## translation prepare / validate
+
+```bash
+alwasp translation prepare fr-FR --context de-DE
+alwasp translation validate ./MyApp.fr-FR.xlf
+```
+
+`translation prepare` creates deterministic packages for a human or external translation service;
+`translation validate` checks returned XLIFF against its authoritative source. ALWasp does not
+translate text or connect to an AI service. See [Translation Preparation](/docs/translation-preparation/)
+for selection modes, package contents, terminology, and validation rules.
+
 ## artifacts download
 
 ```bash
