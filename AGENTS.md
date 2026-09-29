@@ -1,0 +1,1 @@
+When synchronizing documentation with left-code/alwasp releases, use the `alwasp-docs-sync` skill. The version in package.json is the last fully documented ALWasp release.
