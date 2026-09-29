@@ -6,6 +6,57 @@ order: 10
 
 # Release Notes
 
+## 0.4.3 — 2026-09-29
+
+### Workspace builds against Business Central artifacts
+
+`workspace build` can select an Insider target with `--bc-target next-minor|next-major`, or a
+released version with `--bc-version`, plus a localization with `--bc-country`. Microsoft symbols,
+compiler, and analyzers come from the same artifact; partner dependencies still use NuGet.
+Artifact package caches are isolated by version and country. Workspace `--clean` also clears
+other associated package caches, skipping those in use. See [Build](/docs/build/#business-central-artifact-selection).
+
+### Terminal diagnostics
+
+Interactive human output supports clickable paths and public URLs through
+`ALWASP_HYPERLINKS=auto|always|never`. CI, redirected streams, and machine output remain plain.
+Failed commands list available diagnostic logs, build manifests, and translation coverage reports
+in a deduplicated human-only `Failure artifacts` section.
+
+## 0.4.2 — 2026-09-23
+
+### Select apps for compatibility validation
+
+Repeatable `validate compatibility --app` selects apps by name, GUID, or project path in directory
+mode. With `--get-baseline-symbols`, only selected apps receive baseline downloads and validation;
+required local dependencies still compile. Unknown or ambiguous selectors fail. See
+[Compatibility](/docs/compatibility/#select-specific-apps).
+
+## 0.4.1 — 2026-09-22
+
+### Translation packages and dependency context
+
+Translation preparation includes context from direct and transitive non-Microsoft dependencies,
+using local translations or restored packages. Repeatable `--parent-source-folder` supplies parent
+source repositories without building them or adding output apps. Microsoft terminology uses Base
+Application and supports large translation files.
+
+Apps must declare the target locale in `app.json`'s `supportedLocales`; missing or empty lists
+skip the app. Apps with no translation work are also skipped, and regeneration removes stale
+folders. An entirely skipped selection succeeds with an empty package.
+
+Package directories now use app names or configured IDs, with safe names and GUID suffixes for
+collisions. `<App Name>.<language>.xlf` replaces `target.xlf`; manifests include `appName` and
+`translationFile`, and JSON preserves readable Unicode. Update scripts to read the manifest's
+directory and filename. See [Translation Preparation](/docs/translation-preparation/).
+
+### Default output locations
+
+Plans now default to `.alwasp/alwasp-plan.json`, build manifests to `.alwasp/build-manifest.json`,
+and translation packages to `.alwasp/translation/<language>`. Update scripts and CI artifact
+collection that relied on `.output`. Explicit plan and manifest paths retain their existing
+behavior.
+
 ## 0.4.0 — 2026-09-22
 
 ### External translation preparation

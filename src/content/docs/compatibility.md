@@ -102,6 +102,27 @@ alwasp validate compatibility `
 
 The final summary separates validation results, prepared local dependencies, skipped new apps, failures, and total processing time.
 
+### Select specific apps
+
+Repeat `--app` to select validation roots by app name, app GUID, or project path relative to
+`--project-root`. Paths may point to the project directory or its `app.json`:
+
+```bash
+alwasp validate compatibility --project-root ./src --baseline-directory ./latest \
+  --app "Sales App" --app ./Core
+alwasp validate compatibility --project-root ./src --get-baseline-symbols --app ./Core
+```
+
+Names match case-insensitively. Repeated selections are deduplicated; unknown or ambiguous
+selectors fail with an error. Use a GUID or path to disambiguate matching names. `--app` is
+available only in directory mode, including the inferred current-directory root used by
+`--get-baseline-symbols`.
+
+Only selected apps receive baseline downloads and compatibility checks. Required local
+dependencies still compile without becoming validation roots. `--changed-since` can further
+restrict validation within the selected roots. Human output distinguishes discovered and selected
+projects; structured results include `selectedProjects`.
+
 ## Download the latest stable baselines
 
 In directory mode, `--get-baseline-symbols [feed-url]` can download the latest stable published

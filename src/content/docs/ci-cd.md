@@ -104,8 +104,8 @@ ALWasp does not fetch refs or history. Make sure your pipeline checks out the ta
 changed-only CI selection instead:
 
 ```bash
-alwasp plan ci --changed-since origin/main --plan-file .output/alwasp-plan.json
-alwasp build --plan .output/alwasp-plan.json
+alwasp plan ci --changed-since origin/main --plan-file .alwasp/alwasp-plan.json
+alwasp build --plan .alwasp/alwasp-plan.json
 ```
 
 `alwasp plan` writes a deterministic, timestamp-free JSON document selecting directly changed
@@ -120,6 +120,17 @@ configuration, repository HEAD, changed-file set/content, or planned profiles/pr
 drifted since the plan was created — so a stale plan can never silently build the wrong thing. It
 cannot be combined with a positional target or `--profile`. `--changed-since` is allowed only for
 the consuming build's changed-only version calculation and must resolve to the plan's recorded base.
+
+## Default output paths and diagnostics
+
+Since 0.4.1, plans default to `.alwasp/alwasp-plan.json` and `--manifest` without a path uses
+`.alwasp/build-manifest.json`. Update artifact upload paths when relying on these defaults.
+Explicit paths such as `output/build-manifest.json` in the examples above remain unchanged.
+
+On failure, human logs can end with a `Failure artifacts` section pointing to available logs,
+manifests, or translation coverage reports. The section does not become a JSON/NDJSON record.
+CI and redirected output remain plain even when `ALWASP_HYPERLINKS=always` is set; interactive
+local runs can use clickable paths. See [CLI output controls](/docs/cli-reference/#terminal-links-and-failure-artifacts).
 
 ## Permanent version updates
 

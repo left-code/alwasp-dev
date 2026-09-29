@@ -8,6 +8,13 @@ order: 3
 
 ALWasp restores AL symbol packages from NuGet feeds for a single project, a `.code-workspace`, or the selected projects in a config-driven build.
 
+When `workspace build` explicitly selects `--bc-target`, `--bc-version`, or `--bc-country`, its
+Microsoft symbols come from the selected Business Central artifact instead. Partner dependencies
+continue through NuGet, including transitive dependencies and the existing feed/authentication
+options. Microsoft dependencies are excluded from that NuGet traversal. See
+[Workspace artifact selection](/docs/build/#business-central-artifact-selection) for the isolated
+package caches. Standalone `workspace restore` retains its existing NuGet behavior.
+
 ```bash
 alwasp restore
 alwasp restore path/to/app.json

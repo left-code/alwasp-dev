@@ -51,11 +51,11 @@ dependency build levels, deployment order, repository commit IDs, changed-file h
 configuration hash, and an input fingerprint. A change to `alwasp.json`, a configured NuGet
 config, or an active ruleset selects the complete requested target; no relevant changes produce a
 successful empty plan; dependency cycles fail plan creation. The default output is
-`.output/alwasp-plan.json`.
+`.alwasp/alwasp-plan.json`.
 
 ```bash
-alwasp plan ci --changed-since origin/main --plan-file .output/alwasp-plan.json
-alwasp build --plan .output/alwasp-plan.json
+alwasp plan ci --changed-since origin/main --plan-file .alwasp/alwasp-plan.json
+alwasp build --plan .alwasp/alwasp-plan.json
 ```
 
 `alwasp build --plan <path>` consumes that plan instead of resolving target/profile/change
@@ -104,6 +104,9 @@ the compatibility-validated artifact instead of a separate `validate compatibili
 
 ## Manifests
 
+For config-driven and workspace builds, `--manifest` without a path defaults to
+`.alwasp/build-manifest.json`. Explicitly configured paths retain their existing meaning.
+
 Config-driven builds can write a structured manifest with selected projects, groups, effective settings, diagnostics, timestamps, and per-project transformation traceability. Each project records its original and effective version plus `internalDependencyVersions`, which lists every internal dependency version applied for that build without exposing unrelated package data. Each profile entry also records an `artifactType` of `"apps"`, `"tests"`, or `"mixed"`, derived from its selected projects, so a CI pipeline can distinguish application and test output profiles without relying on profile names, selection syntax, or output-folder conventions.
 
 ```bash
@@ -142,6 +145,53 @@ alwasp workspace build --manifest ci/build-manifest.json
 ```
 
 For multi-project repositories, prefer config-driven `alwasp build`.
+
+### Business Central artifact selection
+
+Choose Microsoft symbols and matching compiler/analyzers from a released or Insider artifact:
+
+```bash
+alwasp workspace build --bc-country DE
+alwasp workspace build --bc-target next-minor --bc-country DE
+alwasp workspace build --bc-target next-major
+alwasp workspace build --bc-version 27.5 --bc-country DE
+```
+
+`--bc-target` accepts `next-minor` or `next-major` and cannot be combined with `--bc-version`.
+A four-part version pins an exact released build; a two- or three-part version selects the latest
+matching build. A major version alone is rejected. Country codes are case-insensitive and default
+to `W1`. With country alone, ALWasp selects the latest released artifact in the highest
+`application` major/minor line across workspace apps. Source `app.json` files are not rewritten.
+
+The verified artifact cache supplies a coherent application/platform pair, Microsoft symbols,
+and matching tools. Non-Microsoft dependencies still use NuGet, including feed/authentication
+options, `--latest`, and transitive dependencies. Microsoft dependencies are excluded from NuGet
+at every level, and workspace app IDs are skipped during dependency restore.
+
+Artifact builds use `.alwasp-bc/<packages-name>/<version>-<country>` next to the configured
+packages folder, which defaults to `.alpackages`. These caches isolate BC versions and countries
+from ordinary builds and from other package folders. They are not nested inside the packages
+folder because AL tooling searches its subdirectories. `--outfolder` still collects newly
+compiled apps.
+
+For workspace builds, `--clean` clears ALWasp artifacts from the ordinary package cache and its
+associated artifact caches, including other versions and countries. A cache in use by another
+ALWasp process is skipped with a warning. Unrelated files remain in place.
+
+The selected artifact must include `altool` with workspace compilation support. Otherwise the
+build fails instead of substituting another compiler. Explicit artifact selection does not use
+`AL_PATH` or `ALC_PATH` overrides. Omitting all three options preserves the existing NuGet restore,
+package-folder, and compiler-resolution behavior.
+
+## Generated paths and failure diagnostics
+
+Since 0.4.1, default plans and manifests use `.alwasp` instead of `.output`. Update CI artifact
+collection and scripts relying on the defaults. Explicit `--plan-file` and manifest paths still
+work, so pipelines can retain an old location by supplying it explicitly.
+
+Failed commands list available diagnostic logs and build manifests in a deduplicated
+`Failure artifacts` section. Interactive terminals can make these paths clickable; see
+[CLI output controls](/docs/cli-reference/#terminal-links-and-failure-artifacts).
 
 ## Tool cache
 

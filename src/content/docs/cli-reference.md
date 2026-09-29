@@ -32,6 +32,20 @@ The exit code and default text output are unchanged by `--format`; the result do
 them explainable. `compare --json` and config-driven build manifests are separate,
 command-specific JSON outputs.
 
+### Terminal links and failure artifacts
+
+Interactive human output can show clickable file/directory paths and public URLs. Set
+`ALWASP_HYPERLINKS=auto|always|never` to control links; the default is `auto`. `never` disables
+links, while `always` also enables them for an interactive terminal reporting `TERM=dumb`.
+Even with `always`, redirected streams and CI output remain plain. JSON/NDJSON records and result
+files never contain terminal link escape sequences; any separate human console stream follows
+its own terminal capabilities.
+
+Failed commands show a deduplicated `Failure artifacts` section when diagnostic logs, build
+manifests, or translation coverage reports are available. This is human output only; it does not
+add fields or records to structured results. Successful commands and failures without available
+artifacts do not show the section.
+
 ## restore
 
 ```bash
@@ -63,7 +77,7 @@ Config-driven options include:
 
 - `--config <path>`
 - `--profile <name>`
-- `--manifest [path]`
+- `--manifest [path]` — defaults to `.alwasp/build-manifest.json` when the path is omitted
 - `--continue-on-error`
 - `--changed-since <ref>`
 - `--plan <path>` — consume a plan from `alwasp plan` instead of resolving selection directly;
@@ -91,15 +105,15 @@ Single-project options include:
 ## plan
 
 ```bash
-alwasp plan ci --changed-since origin/main --plan-file .output/alwasp-plan.json
-alwasp build --plan .output/alwasp-plan.json
+alwasp plan ci --changed-since origin/main --plan-file .alwasp/alwasp-plan.json
+alwasp build --plan .alwasp/alwasp-plan.json
 ```
 
 Options:
 
 - `--config <path>` / `--profile <name>`
 - `--changed-since <ref>` (required)
-- `--plan-file <path>` — defaults to `.output/alwasp-plan.json`; relative paths resolve from the
+- `--plan-file <path>` — defaults to `.alwasp/alwasp-plan.json`; relative paths resolve from the
   current directory
 
 Creates a deterministic, timestamp-free CI plan without compiling: directly changed projects,
@@ -195,7 +209,9 @@ Options include:
 
 - `--project <dir>` and `--baseline <app>` for one direct project
 - `--project-root <dir>` and `--baseline-directory <dir>` for recursive multi-app discovery
-- `--get-baseline-symbols [feed-url]` downloads each discovered app's latest stable baseline;
+- `--app <name|id|path>` selects a validation root in `--project-root` mode; repeat for multiple
+  apps. Required local dependencies still compile. Unknown or ambiguous selectors fail.
+- `--get-baseline-symbols [feed-url]` downloads each selected app's latest stable baseline;
   omit the URL to use Microsoft AppSourceSymbols
 - `--changed-since <ref>` limits `--project-root` validation to changed apps and their dependents;
   accepts `latest`, `latest:<glob>`, `latest-merge:<text>`, or a Git ref
@@ -220,6 +236,13 @@ alwasp translation validate ./MyApp.fr-FR.xlf
 `translation validate` checks returned XLIFF against its authoritative source. ALWasp does not
 translate text or connect to an AI service. See [Translation Preparation](/docs/translation-preparation/)
 for selection modes, package contents, terminology, and validation rules.
+
+Preparation accepts `--project`, `--project-root`, `--workspace`, or `--config` / `--profile`
+selection, optional `--context <locale>`, and repeatable `--parent-source-folder <dir>` for
+dependency source context. `--bc-target current|next-minor|next-major`, `--bc-version`, and
+`--bc-country` select Microsoft terminology. Output is `.alwasp/translation/<language>`;
+apps must list the target locale in `app.json`'s `supportedLocales` and have translation work.
+Edit and return the manifest's `translationFile`, named `<App Name>.<language>.xlf`.
 
 ## artifacts download
 
@@ -269,6 +292,11 @@ Workspace commands operate directly on `.code-workspace` files. They remain usef
 
 Common `workspace build` options:
 
+- `--bc-target <next-minor|next-major>` — Insider artifact; excludes `--bc-version`
+- `--bc-version <version>` — exact four-part released build or latest match for a two-/three-part
+  version; excludes `--bc-target`
+- `--bc-country <code>` — artifact country, default `W1`; country alone selects the latest
+  released build in the highest workspace application major/minor line
 - `--restore`
 - `--packages <path>`
 - `--outfolder <dir>`
@@ -277,9 +305,14 @@ Common `workspace build` options:
 - `--ruleset <file>`
 - `--log-directory <dir>`
 - `--diagnostics`
-- `--manifest [path]`
+- `--manifest [path]` — defaults to `.alwasp/build-manifest.json` when the path is omitted
 - `--clean` — remove prior ALWasp package cache, compiled output, compiler log, and
   build-manifest artifacts before restoring and compiling
+
+Artifact selection uses matching Microsoft symbols and tools, with partner dependencies restored
+through NuGet. `--clean` also clears the workspace's other artifact package caches, skipping
+caches in use. See [Workspace build](/docs/build/#business-central-artifact-selection) for cache
+paths and compiler requirements.
 
 ## tools update
 
