@@ -26,6 +26,9 @@
     "restore": {
       "$ref": "#/$defs/restoreConfig"
     },
+    "compatibility": {
+      "$ref": "#/$defs/compatibilityPolicyConfig"
+    },
     "workspace": {
       "$ref": "#/$defs/workspaceConfig"
     },
@@ -82,6 +85,31 @@
     }
   },
   "$defs": {
+    "compatibilityPolicyConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["baseline"],
+      "properties": {
+        "baseline": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source"],
+          "properties": {
+            "source": {
+              "type": "string",
+              "enum": ["publishedSymbols"],
+              "description": "Latest stable published AppSource symbols for selected apps without an explicit per-app baseline. Test projects are excluded."
+            },
+            "feed": {
+              "type": "string",
+              "format": "uri",
+              "pattern": "^https?://[^/?#@]+(?:/[^?#]*)?$",
+              "description": "Optional HTTP(S) NuGet feed without credentials or tokens. Defaults to Microsoft's AppSourceSymbols feed; authentication uses existing restore/CLI settings."
+            }
+          }
+        }
+      }
+    },
     "toolingConfig": {
       "type": "object",
       "description": "Optional overrides for AL compiler tool paths. By default ALWasp downloads the tools automatically.",
