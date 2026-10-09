@@ -28,12 +28,10 @@ alwasp build
 alwasp build ci
 ```
 
-`alwasp init` scans direct child folders for `app.json` files and writes an `alwasp.json` starter config. It places every discovered project in `apps` by default, so move test projects to `tests` before building.
-
-Use `--include-tests-by-name` only when your test project folders consistently end in `Test` or `Tests`.
+`alwasp init` scans direct child folders for `app.json` and classifies their AL source. Confirmed test apps are omitted by default; `--include-tests` adds them to `tests`. Unknown source is placed in `apps` with a review warning. Folder names do not determine classification. Review the generated inventory before release.
 
 ```bash
-alwasp init --include-tests-by-name
+alwasp init --include-tests
 ```
 
 ## Command model
@@ -42,6 +40,12 @@ alwasp init --include-tests-by-name
 alwasp  [--format text|json|ndjson] [--result-file <path>]
 ├── restore [appJsonPath]
 ├── build [targetOrPath]
+├── check [targetOrProfile]                  configured verification gates
+├── context
+│   ├── search <query>
+│   ├── object <query>
+│   ├── usages <query>
+│   └── prepare --task <path>
 ├── init
 ├── config
 │   └── validate

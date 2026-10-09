@@ -204,3 +204,15 @@ Paths are repository-relative with forward slashes, so a report produced on Wind
 produced on Linux compare equal byte for byte. Every collection has one documented, enforced
 order, built only from values the document itself carries — ordinal comparisons only, never
 file-system enumeration, hash iteration, OS, culture, or thread scheduling.
+
+## Direct workspace selection
+
+```bash
+alwasp analyze --workspace Apps.code-workspace --changed-since origin/main
+```
+
+Choose one of `--project`, recursive `--project-root`, or `--workspace`, or configured selection.
+Workspace mode includes only folders directly containing app.json, without recursion. It cannot
+be combined with config/profile/target selection. Workspace change detection requires one Git
+repository. For restored dependency inspection and agent evidence packages, use
+[Agent Context](/docs/context/).

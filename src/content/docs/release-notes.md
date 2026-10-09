@@ -6,6 +6,94 @@ order: 10
 
 # Release Notes
 
+## 0.5.6 — 2026-10-09
+
+- Build projects without configuration using `build --project` or recursive `--project-root`,
+  repeatable `--app`, changed-only selection, and optional `--include-dependents`. Local dependencies
+  compile in order without being collected as selected outputs; tests can also be built.
+- Direct/configured builds accept BC target/version/country selection. Pinned/Insider artifacts
+  supply matching Microsoft symbols, compiler, and analyzers with isolated caches and outputs.
+  Default `current` builds retain NuGet symbols. Build accepts exactly one country.
+- Every build reports effective settings with provenance, diagnostics, outputs, and failing stage;
+  structured results/manifests include the report. Reported secrets and restore feed URLs are masked.
+- **Migration:** standalone compatibility `--changed-since` now validates only apps whose own
+  files changed. Add `--include-dependents` for downstream validation. Build/check/plan configured
+  change-detection behavior remains unchanged. Changed-only baseline downloads target validated apps.
+- Project-root/workspace compatibility can run without a baseline source, compiling current
+  production source without AppSourceCop. Directory builds/compatibility also discover
+  `al.ruleSetPath` from project VS Code settings or an enclosing workspace.
+- Ordinary preprocessor conditionals no longer make classification unknown; every branch is read
+  so test codeunits remain visible. Malformed directives still warn. Classification warnings and
+  changed-only discovery summaries are shorter.
+
+See [Build](/docs/build/) and [Compatibility](/docs/compatibility/).
+
+## 0.5.5 — 2026-10-08
+
+- Compatibility accepts country lists such as `--bc-country de,us,w1`, with isolated source/cache
+  runs and `--max-parallel-countries` (default 2). All countries report results; any failure fails
+  the command.
+- **Migration:** use `init --include-tests` instead of `--include-tests-by-name`. Source test
+  codeunits determine classification, including apps containing test support objects.
+  Discovered compatibility/translation selections exclude confirmed tests; unknown source stays
+  eligible. Explicit configuration overrides inference. Duplicate manifest GUIDs in inventory fail validation.
+- Selected production apps without baselines now compile/analyze current source without
+  AppSourceCop instead of being skipped. Compatibility is N/A, while compile/analyzer failures
+  fail the command. All-unpublished baseline lookup can succeed; feed failures still fail.
+  Structured results add source-validation fields and remove `newAppsSkipped`.
+
+## 0.5.4 — 2026-10-07
+
+All four context commands accept repeatable `--dependency-source-folder`. Exact restored symbols
+remain authoritative; matching local dependency source adds verified implementation members,
+objects, and provenance. Mismatches/ambiguity produce `ALWCTX007`–`ALWCTX012`. Source-enriched
+packages use schema 1.1; symbol-only packages retain 1.0. See [Agent Context](/docs/context/).
+
+## 0.5.3 — 2026-10-05
+
+Context preparation keeps the highest-ranked candidates fitting the 16 MiB package limit,
+warns about omissions, and records `sizeLimitReached`. Generated JSON preserves readable Unicode.
+Repeated symbol-object identities receive reproducible distinct keys instead of failing preparation.
+
+## 0.5.2 — 2026-10-03
+
+BC artifact builds use compiler binaries for the host OS and restore executable permissions for
+Linux/macOS tools. Workspace builds accept Windows-style backslash paths across platforms.
+
+## 0.5.1 — 2026-10-02
+
+`analyze`, compatibility/translation validation, and all four context commands accept direct
+`--workspace` selection. Only folders directly containing app.json are selected, without
+recursive discovery. Compatibility supports workspace baseline directories, published symbols,
+and relative `--app` filters. Analysis/compatibility change detection requires one Git repository.
+
+## 0.5.0 — 2026-10-02
+
+- [`alwasp check`](/docs/check/) runs configured verification gates over one deterministic
+  target/profile, changed-only, or validated-plan selection. Independent translation gates
+  continue after build failure. Test apps are reported as compiled, never executed.
+- [`context search`, `object`, `usages`, and `prepare`](/docs/context/) provide offline local AL
+  and restored-symbol evidence. Preparation writes a bounded agent package in `.alwasp/context/`
+  without changing source or calling an AI service.
+- Configured compatibility and check support top-level `compatibility.baseline.source:
+  publishedSymbols` with an optional authenticated feed. Explicit per-app baselines win.
+  Baselines resolve by AppId across package/publisher renames and use the highest stable version.
+  At this release unpublished apps reported N/A without failing; 0.5.5 adds source validation.
+- Verification/compatibility summaries include elapsed time, app verdict counts/IDs, and failure
+  artifacts. Compiler diagnostics are counted separately from workflow messages.
+- Builds count only compiler logs rewritten by the current group, preventing earlier warnings
+  from failing later groups or being counted twice in manifests.
+
+## 0.4.4 — 2026-09-30
+
+- Translation preparation/validation support source character limits, approved locale glossaries,
+  and package-directory checks for glossary violations, terminology differences, and inconsistent
+  translations. Coverage reports length violations; `--fail-on needs-review` makes them fatal.
+- Packages record terminology/expected BC versions and available source revision metadata.
+  `--expected-bc-version` warns about terminology mismatches without changing artifact selection.
+- Templates preserve target BOM/newline/XML declaration conventions. Apostrophe guidance follows
+  existing unit/file style without rewriting punctuation. See [Translation Preparation](/docs/translation-preparation/).
+
 ## 0.4.3 — 2026-09-29
 
 ### Workspace builds against Business Central artifacts

@@ -26,7 +26,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 10.0.x
 
       - name: Install ALWasp
         run: dotnet tool install --global left-code.AlWasp
@@ -187,3 +187,19 @@ report to review what changed.
 See [Translation Coverage](/docs/translations/) for the complete behavior. Findings are also emitted as build annotations under
 GitHub Actions and Azure Pipelines, so missing or stale translations surface in the pipeline UI
 without reading the log.
+
+## Unified verification
+
+Use [`alwasp check`](/docs/check/) to run configured build, compatibility, and translation gates
+over one selection. Independent translation checks continue after a build failure.
+
+```bash
+alwasp check ci --auth-mode noninteractive --format json --result-file .alwasp/check-result.json
+alwasp plan ci --changed-since origin/main
+alwasp check --plan .alwasp/alwasp-plan.json
+```
+
+Archive the result file and reported failure artifacts. Check compiles test apps but does not run
+Business Central tests. Standalone compatibility changed-only validation now needs
+`--include-dependents` to include downstream apps; `check` and `plan` retain their existing
+dependent/test/prerequisite selection.

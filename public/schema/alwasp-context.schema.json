@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/left-code/alwasp/schemas/alwasp-context.schema.json",
+  "title": "ALWasp context package manifest v1.0 / v1.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "taskSha256",
+    "maxCandidates",
+    "maxDepth",
+    "maxObjects",
+    "candidateLimitReached",
+    "objectLimitReached",
+    "sources",
+    "files"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "enum": [
+        "1.0",
+        "1.1"
+      ]
+    },
+    "kind": {
+      "const": "alwasp-context"
+    },
+    "taskSha256": {
+      "$ref": "#/$defs/hash"
+    },
+    "maxCandidates": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "maxDepth": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2
+    },
+    "maxObjects": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 500
+    },
+    "candidateLimitReached": {
+      "type": "boolean"
+    },
+    "objectLimitReached": {
+      "type": "boolean"
+    },
+    "sizeLimitReached": {
+      "type": "boolean"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "path",
+          "project",
+          "file",
+          "line",
+          "sha256"
+        ],
+        "properties": {
+          "key": {
+            "$ref": "#/$defs/hash"
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^(local|dependency-source)/[a-f0-9]{64}\\.al$"
+          },
+          "project": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sha256": {
+            "$ref": "#/$defs/hash"
+          },
+          "origin": {
+            "const": "dependency-source"
+          },
+          "packageSha256": {
+            "$ref": "#/$defs/hash"
+          }
+        }
+      }
+    },
+    "files": {
+      "type": "array",
+      "minItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^(task\\.md|instructions\\.md|environment\\.json|candidates\\.json|graph\\.json|tests\\.json|local/[a-f0-9]{64}\\.al|dependency-source/[a-f0-9]{64}\\.al|dependencies/[a-f0-9]{64}\\.json)$"
+          },
+          "sha256": {
+            "$ref": "#/$defs/hash"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "const": "1.0"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "sources": {
+            "items": {
+              "properties": {
+                "path": {
+                  "pattern": "^local/[a-f0-9]{64}\\.al$"
+                }
+              },
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "origin"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "packageSha256"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "files": {
+            "items": {
+              "properties": {
+                "path": {
+                  "not": {
+                    "pattern": "^dependency-source/"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "const": "1.1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "sources": {
+            "items": {
+              "if": {
+                "properties": {
+                  "path": {
+                    "pattern": "^dependency-source/"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "origin",
+                  "packageSha256"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

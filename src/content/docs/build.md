@@ -6,10 +6,11 @@ order: 4
 
 # Build
 
-`alwasp build` has two modes:
+`alwasp build` has three modes:
 
 | Mode | Trigger | Compiler |
 |---|---|---|
+| Direct projects | Explicit `--project` or `--project-root` | `altool workspace compile` |
 | Config-driven | `alwasp.json` exists or `--config` / `--profile` is used | `altool workspace compile` |
 | Single-project | No `alwasp.json` | `alc` |
 
@@ -202,3 +203,59 @@ alwasp tools update
 alwasp tools update --check
 alwasp tools update --clean
 ```
+
+## Direct project builds
+
+```bash
+alwasp build --project ./src/Core
+alwasp build --project-root ./src --app Core --app Sales
+alwasp build --project-root ./src --changed-since origin/main
+alwasp build --project-root ./src --changed-since origin/main --include-dependents
+alwasp build --project-root ./src --bc-version 27.5 --bc-country DE
+```
+
+Explicit direct selection takes precedence even when `alwasp.json` exists. It cannot be combined
+with a positional target/path, `--profile`, `--plan`, or `--config`. `build` has no `--workspace`
+option; use `workspace build` for that workflow. `--app` is repeatable in project-root mode and
+accepts names, app IDs, or paths relative to the root. Unknown/ambiguous selectors fail.
+
+Projects compile in dependency order, including test apps. Required local dependencies compile
+as dependency-only projects and are not collected as requested outputs. `--changed-since`
+selects apps whose own files changed and the dependencies needed to compile them; add
+`--include-dependents` to also build downstream apps. No selected changes succeeds without compilation.
+
+The pipeline shares configured build's restore, package-cache locking, temporary app.json edits
+and restoration, and per-project manifest records. Ordinary direct builds collect output in
+`<selection-root>/.output`; artifact builds default to `.output/<version>-<country>`.
+`--outfolder` overrides this relative to the current directory; `--out` is rejected.
+
+## Business Central targets for build
+
+Direct and configured builds accept `--bc-target current|next-minor|next-major`, `--bc-version`,
+and exactly one `--bc-country` (CLI, then `restore.country`, then `W1`). `current` keeps NuGet
+Microsoft symbols and ordinary tool resolution. A pinned version or Insider target supplies one
+coherent artifact's Microsoft symbols, compiler, and analyzers; partner dependencies still use
+NuGet. `--bc-version` excludes `--bc-target next-minor|next-major`. A conflicting configured
+`workspace.bcVersion` major/minor fails validation.
+
+Artifact package caches use `.alwasp-bc/<packages-name>/<version>-<country>` next to the package
+folder. Missing artifacts or workspace-capable compilers fail instead of substituting another
+target. These options are rejected for a positional app.json build. Country lists are supported
+by compatibility validation, not build. Linux/macOS artifact tools use the matching OS binaries;
+workspace paths may use Windows backslashes across platforms.
+
+## Effective configuration and rulesets
+
+Every `build` reports the effective settings and their source: `cli`, `config`, `profile`,
+`project`, `discovered`, `default`, `resolved`, or `notResolved`. The summary includes per-project
+settings, diagnostics totals, outputs, and the failing stage. Quiet mode suppresses successful
+summary text. Structured results expose `effectiveConfiguration`; build manifests add `mode`,
+`selection`, `projects[].role`, and `effectiveConfiguration` without changing their schema version.
+Credentials, secret URL parameters, bearer tokens, and connection strings are redacted.
+
+Directory-mode builds discover a project ruleset first (`ruleset.json`, then `*.ruleset.json`),
+then `al.ruleSetPath` in project `.vscode/settings.json`, then an enclosing `.code-workspace`.
+Settings paths resolve relative to the project folder; missing files are ignored. Workspace
+discovery requires a single workspace file at the enclosing level. An explicit CLI ruleset wins.
+Diagnostics count only logs rewritten by the current compile group,
+so earlier groups' warnings cannot fail a later group.

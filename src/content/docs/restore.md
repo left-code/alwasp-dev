@@ -132,3 +132,9 @@ alwasp workspace restore --packages ./shared/.alpackages
 ```
 
 The same feed, auth, country, and override settings can be supplied through `alwasp.json` for config-driven builds, where restore runs before compilation unless disabled with `restore.enabled: false`.
+
+## Credential-safe feed output
+
+Restore masks embedded URL credentials and secret query parameters in NuGet feed log/error lines.
+Use the existing authentication options for private feeds; build effective-configuration reports
+apply the same protection to reported credentials and connection strings.

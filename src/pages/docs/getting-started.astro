@@ -13,6 +13,12 @@ alwasp build ci`;
 const commandModel = `alwasp
 ├── restore [appJsonPath]
 ├── build [targetOrPath]
+├── check [targetOrProfile]
+├── context search | object | usages | prepare
+├── analyze [targetOrProfile]
+├── plan [targetOrProfile] --changed-since <ref>
+├── validate translations [targetOrProfile]
+├── translation prepare | validate
 ├── init
 ├── config validate
 ├── version apply [targetOrProfile]
@@ -96,8 +102,8 @@ const steps = [
               <span class="font-mono text-xs text-ink-500">alwasp.json</span>
             </div>
             <h3 class="mt-5 text-xl font-semibold text-ink-900">Config-driven repository</h3>
-            <p class="mt-2 text-sm leading-6 text-ink-700"><code>alwasp init</code> discovers direct child projects and writes a starter config. Move test projects from <code>apps</code> to <code>tests</code>, then model profiles and CI targets explicitly.</p>
-            <div class="mt-5 rounded-lg border-l-4 border-wasp-300 bg-wasp-100/50 p-4 text-sm leading-6 text-ink-700">Use <code>--include-tests-by-name</code> when test folders consistently end in <strong>Test</strong> or <strong>Tests</strong>.</div>
+            <p class="mt-2 text-sm leading-6 text-ink-700"><code>alwasp init</code> discovers direct child projects and writes a starter config. Confirmed test apps are omitted by default; review uncertain source classifications, then model profiles and CI targets explicitly.</p>
+            <div class="mt-5 rounded-lg border-l-4 border-wasp-300 bg-wasp-100/50 p-4 text-sm leading-6 text-ink-700">Use <code>alwasp init --include-tests</code> to include source-classified test apps in <code>tests</code>.</div>
           </article>
           <article class="rounded-xl border border-ink-200 bg-white p-6 shadow-sm">
             <div class="flex items-center justify-between gap-4">
@@ -105,10 +111,10 @@ const steps = [
               <span class="font-mono text-xs text-ink-500">app.json</span>
             </div>
             <h3 class="mt-5 text-xl font-semibold text-ink-900">Single project or workspace</h3>
-            <p class="mt-2 text-sm leading-6 text-ink-700">Without <code>alwasp.json</code>, build directly from an <code>app.json</code> file or point the workspace commands at a folder. ALWasp falls back to focused <code>alc</code> compilation.</p>
+            <p class="mt-2 text-sm leading-6 text-ink-700">Use <code>build --project</code> or <code>--project-root</code> for dependency-aware builds without configuration. A positional <code>app.json</code> uses focused <code>alc</code> compilation; workspace commands accept <code>.code-workspace</code> files.</p>
             <div class="mt-5 grid gap-2 font-mono text-xs text-ink-700">
               <code class="rounded-md bg-ink-100 px-3 py-2">alwasp build ./app.json</code>
-              <code class="rounded-md bg-ink-100 px-3 py-2">alwasp workspace build ./src</code>
+              <code class="rounded-md bg-ink-100 px-3 py-2">alwasp build --project-root ./src</code>
             </div>
           </article>
         </div>

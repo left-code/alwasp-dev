@@ -24,7 +24,9 @@ const commandGroups = [
       ["Write manifest", "alwasp build ci --manifest output/build.json"],
       ["CI plan", "alwasp plan ci --changed-since origin/main"],
       ["Build from plan", "alwasp build --plan .alwasp/alwasp-plan.json"],
-      ["Clean build", "alwasp build ci --clean"]
+      ["Clean build", "alwasp build ci --clean"],
+      ["Direct project discovery", "alwasp build --project-root ./src"],
+      ["Next BC release", "alwasp build ci --bc-target next-major"]
     ]
   },
   {
@@ -43,6 +45,8 @@ const commandGroups = [
     title: "Analyze and gate releases",
     tone: "border-mint-700 bg-mint-100/40",
     commands: [
+      ["Configured gates", "alwasp check ci"],
+      ["Agent context", "alwasp context prepare --task story.md --project-root ./src"],
       ["Impact of a change", "alwasp analyze ci --changed-since latest"],
       ["Translation coverage", "alwasp validate translations --fail-on needs-review"],
       ["Prepare translation", "alwasp translation prepare fr-FR --context de-DE"],
@@ -74,7 +78,7 @@ const changeRefs = [
           <div class="flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-wasp-300">
             <span>ALWasp field guide</span>
             <span class="h-px w-12 bg-wasp-300/60"></span>
-            <span class="text-ink-200">v0.4.3</span>
+            <span class="text-ink-200">v0.5.6</span>
           </div>
           <h1 class="mt-5 text-4xl font-semibold tracking-tight sm:text-6xl">Build AL without breaking your flow.</h1>
           <p class="mt-5 max-w-3xl text-lg leading-8 text-ink-200">
@@ -282,7 +286,7 @@ const changeRefs = [
       </section>
 
       <div class="flex flex-col gap-3 border-t border-ink-200 pt-6 text-sm text-ink-500 sm:flex-row sm:items-center sm:justify-between">
-        <span>ALWasp cheatsheet · documentation for v0.4.3</span>
+        <span>ALWasp cheatsheet · documentation for v0.5.6</span>
         <div class="flex gap-4 font-semibold">
           <a href="/docs/getting-started/" class="text-mint-700 hover:underline">Getting started</a>
           <a href="/examples/" class="text-mint-700 hover:underline">Examples</a>

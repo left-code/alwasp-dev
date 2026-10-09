@@ -182,3 +182,23 @@ any translation checks. Direct `--project` / `--project-root` validation is unaf
 ```bash
 alwasp validate translations ci --changed-since latest
 ```
+
+## Character limits and workspace discovery
+
+Source `maxwidth`/`maxWidth` constraints are checked against target length in UTF-16 code units
+when `size-unit` is `char` or omitted. Supplementary Unicode characters count as two.
+Overlength targets are reported separately from coverage and fail only at
+`--fail-on needs-review`; the default `untranslated` gate warns. Other size units warn instead
+of applying an incorrect character limit. ALWasp does not truncate translations.
+
+`--workspace Apps.code-workspace` selects folders directly containing app.json without recursion,
+using the global direct CLI policy rather than per-project configured policy. It excludes
+config/profile/target and other direct selection options. `--changed-since` is config-driven only
+for coverage validation.
+
+Discovered project-root/workspace selections exclude confirmed source test apps, while unknown
+source stays eligible with warnings. Explicit `--project` retains a test app. Explicit configured
+targets/profiles retain their selection; an implicit configured default excludes tests.
+Classification evidence and skipped test IDs/counts are included in structured results.
+For glossary, file conventions, and cross-app consistency checks, use
+[translation package validation](/docs/translation-preparation/).

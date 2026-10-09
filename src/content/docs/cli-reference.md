@@ -19,12 +19,13 @@ Every command also accepts:
   result document to stdout with human output moved to stderr; `ndjson` (alias `jsonl`) streams
   one JSON record per line as the command runs
 - `--result-file <path>` — writes the json/ndjson output to a file and leaves the console in
-  plain-text mode; required for `build`/`workspace build`, whose `altool` output cannot itself be
+  plain-text mode; required for `build`/`check`/`workspace build`, whose `altool` output cannot itself be
   redirected
 
 ```bash
 alwasp restore --format json | jq '.data.packagesFolder'
-alwasp build release --format ndjson | jq -r 'select(.type=="event") | .event'
+alwasp build release --format ndjson --result-file .alwasp/build-result.ndjson
+jq -r 'select(.type=="event") | .event' .alwasp/build-result.ndjson
 alwasp build release --format json --result-file .output/build-result.json
 ```
 
@@ -102,6 +103,17 @@ Single-project options include:
 - `--features <feature>`
 - analyzer flags
 
+Direct dependency-aware builds accept `--project <dir>` or recursive `--project-root <dir>`.
+Root mode also accepts repeatable `--app <name|appId|relativePath>`, `--changed-since`, and
+`--include-dependents`. Required local dependencies compile but are not collected as selected
+outputs. Direct options exclude positional target/path, `--config`, `--profile`, and `--plan`;
+`--outfolder` sets output and `--out` is rejected. `build` has no `--workspace` option.
+
+Direct and configured modes accept `--bc-target current|next-minor|next-major`, `--bc-version`,
+and exactly one `--bc-country` (default `restore.country`, else `W1`). `current` retains NuGet
+symbols; pinned/Insider builds use one artifact's Microsoft symbols/compiler/analyzers.
+These options are rejected for positional app.json builds. See [Build](/docs/build/).
+
 ## plan
 
 ```bash
@@ -124,15 +136,51 @@ config, or an active ruleset selects the complete requested target; no relevant 
 successful empty plan; dependency cycles fail plan creation. Consume the plan with
 `alwasp build --plan <path>`. See [CI/CD](/docs/ci-cd/#deterministic-ci-plans).
 
+## check
+
+```bash
+alwasp check ci
+alwasp check --profile appsource --changed-since origin/main
+alwasp check --plan .alwasp/alwasp-plan.json
+alwasp check ci --format json --result-file .alwasp/check-result.json
+```
+
+Runs configured verification gates over one resolved selection: configuration, restore/build,
+compiler diagnostics, compatibility, and translation coverage. Tests compile but are not executed.
+Requires `alwasp.json`; options include `--config`, `--profile`, `--changed-since`, `--plan`,
+`--continue-on-error`, and feed/authentication options. Plan conflicts and stale-plan checks match
+build. Independent translation checks continue after build failure. Exit `0` requires no failed
+step. See [Verification with check](/docs/check/).
+
+## context search / object / usages / prepare
+
+```bash
+alwasp context search "sales release" --project ./App
+alwasp context object 'table "Sales Header"' --workspace Apps.code-workspace
+alwasp context usages 'codeunit "Release Sales Document"' --project ./App
+alwasp context prepare --task story.md --project-root ./src
+```
+
+Offline discovery over selected source and restored dependencies. All four accept `--project`,
+`--project-root`, or `--workspace`, alternatively `--config` / `--profile` / `--target`, plus
+`--packages-folder` and repeatable `--dependency-source-folder`. Direct and configured selection
+cannot be combined. Search/prepare accept `--max-candidates`; prepare also accepts `--max-depth`,
+`--max-objects`, and `--output` (default `.alwasp/context/`). Object/usages return `2` for ambiguity.
+See [Agent Context](/docs/context/) for bounds, schemas, diagnostics, and usage limitations.
+
 ## init
 
 ```bash
 alwasp init
 alwasp init --force
-alwasp init --include-tests-by-name
+alwasp init --include-tests
 ```
 
 Creates an `alwasp.json` starter config in the current directory.
+
+Scans direct child projects and classifies source. Confirmed tests are omitted by default;
+`--include-tests` puts them in `tests`. Unknown source enters `apps` with a review warning.
+Folder names are not classification evidence. The old `--include-tests-by-name` option has no alias.
 
 ## config validate
 
@@ -168,7 +216,7 @@ alwasp analyze --project src/Core --json out/analysis.json
 
 Options:
 
-- `--project <dir>` / `--project-root <dir>` for direct or discovery-mode selection, or `[targetOrProfile]` / `--config` / `--profile` for config-driven selection
+- `--project <dir>` / `--project-root <dir>` / `--workspace <file>` for direct selection, or `[targetOrProfile]` / `--config` / `--profile` for config-driven selection
 - `--changed-since <ref>` activates object-level change detection
 - `--include <section,...>` narrows the report to named sections (repeatable or comma-separated)
 - `--max-depth <int>` caps impact propagation for `impacted-tests`
@@ -209,21 +257,27 @@ Options include:
 
 - `--project <dir>` and `--baseline <app>` for one direct project
 - `--project-root <dir>` and `--baseline-directory <dir>` for recursive multi-app discovery
-- `--app <name|id|path>` selects a validation root in `--project-root` mode; repeat for multiple
+- `--workspace <file>` selects only folders directly containing `app.json`, without recursion;
+  baseline directories or published symbols are supported
+- `--app <name|id|path>` selects a validation root in project-root/workspace mode; repeat for multiple
   apps. Required local dependencies still compile. Unknown or ambiguous selectors fail.
 - `--get-baseline-symbols [feed-url]` downloads each selected app's latest stable baseline;
   omit the URL to use Microsoft AppSourceSymbols
-- `--changed-since <ref>` limits `--project-root` validation to changed apps and their dependents;
+- `--changed-since <ref>` limits project-root/workspace validation to apps whose own files changed;
   accepts `latest`, `latest:<glob>`, `latest-merge:<text>`, or a Git ref
+- `--include-dependents` also validates transitive dependents with `--changed-since`
 - `--packages <dir>` for current dependency packages
 - `--ruleset <file>` for compiler diagnostic severity overrides
 - `--bc-target <current|next-minor|next-major>`, `--bc-version <version>`, and
-  `--bc-country <code>` select the Business Central artifact used for validation
+  `--bc-country <code,...>` select the Business Central artifacts used for validation
+- `--max-parallel-countries <N>` bounds concurrent country runs (positive, default `2`)
 - `--config <file>` / `--profile <name>` in config-driven mode
 - restore/feed/authentication options
 - `-v|--verbose` and `-q|--quiet`
 
-The command recompiles source with AppSourceCop and remains separate from normal builds.
+Apps with baselines compile with AppSourceCop. Project-root/workspace mode permits no baseline
+source; apps lacking baselines still compile with non-baseline analyzers and report compatibility
+N/A. Discovered confirmed tests are excluded; explicit selection and configuration take precedence.
 
 ## translation prepare / validate
 
@@ -243,6 +297,11 @@ dependency source context. `--bc-target current|next-minor|next-major`, `--bc-ve
 `--bc-country` select Microsoft terminology. Output is `.alwasp/translation/<language>`;
 apps must list the target locale in `app.json`'s `supportedLocales` and have translation work.
 Edit and return the manifest's `translationFile`, named `<App Name>.<language>.xlf`.
+
+`--glossary <json>` supplies approved locale terminology to prepare or validate.
+`--expected-bc-version <version>` warns about terminology-version mismatches without changing
+artifact selection. `translation validate <package-directory>` checks all returned apps using
+packaged sources, glossary, and terminology; it excludes project selection and `--source`.
 
 ## artifacts download
 
@@ -266,14 +325,14 @@ alwasp validate translations --project-root ./src --json output/translations.jso
 
 Options:
 
-- `--project <dir>` / `--project-root <dir>`, or `[targetOrProfile]` / `--config` / `--profile`
+- `--project <dir>` / `--project-root <dir>` / `--workspace <file>`, or `[targetOrProfile]` / `--config` / `--profile`
 - `--languages <tag,...>` required language tags, overriding `translations.languages`; when
   non-empty, also scopes the check to just these languages
 - `--check-placeholders` requires matching `%1`/`{0}`/`#`-style placeholders between source and target
 - `--fail-on <none|missing-language|missing-unit|untranslated|needs-review>` — default `untranslated`
 - `--min-coverage <percent>` per-language coverage floor
 - `--require-generated` fails a project with no generated `.g.xlf` instead of only warning
-- `--changed-since <ref>` scopes checked projects to the changed set
+- `--changed-since <ref>` scopes configured projects to the changed set (config-driven only)
 - `--json <path>` writes the coverage report
 
 Compares each project's generated XLIFF against its language files; no compiler or symbol

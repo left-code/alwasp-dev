@@ -358,3 +358,35 @@ Validation reports all errors in one pass:
 - `versioning.explicitVersion` not parseable as `Major.Minor.Build.Revision`
 - `applicationInsights` (top level and per-profile): missing `source` when `enabled`, missing `environmentVariable`/`environmentVariables` for the selected source, and `environmentVariables` keys not matching a known project id
 - Filesystem checks against the config's directory: nonexistent app/test paths, missing `app.json` in a project folder, duplicate physical paths, and `outFolder`/`packagesFolder`/`workspace.manifest`/`workspace.logDirectory` locations that are unsafely nested inside source or output directories
+
+## Published compatibility baselines
+
+```json
+{
+  "compatibility": {
+    "baseline": {
+      "source": "publishedSymbols",
+      "feed": "https://example.com/nuget/v3/index.json"
+    }
+  }
+}
+```
+
+This top-level policy enables latest stable published baselines for `check` and configured
+`validate compatibility`. Omit `feed` to use Microsoft AppSourceSymbols. The feed must be HTTP(S)
+without embedded credentials, tokens, query parameters, or fragments; existing NuGet
+authentication and CLI/restore options supply credentials. Explicit per-app baseline paths win.
+Lookup respects target/profile, changed-only, and plan selections and excludes tests.
+
+Apps without a published baseline are restored, compiled, and analyzed without AppSourceCop;
+compatibility is N/A while compile/analyzer errors still fail the gate. This top-level policy
+does not opt ordinary builds into published baseline lookup. Profile-bound build validation
+continues to use explicit per-app baselines.
+
+## Inventory classification
+
+`init --include-tests` includes source-classified tests; plain `init` omits them. Test codeunits
+determine classification rather than names. Unknown source enters generated `apps` with warnings
+and needs review. Explicit valid `apps`/`tests` entries override later discovery inference.
+Configuration validation rejects duplicate app manifest GUIDs across both lists, as well as
+duplicate configured IDs and physical paths.

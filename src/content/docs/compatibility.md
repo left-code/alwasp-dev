@@ -6,7 +6,7 @@ order: 5
 
 # Compatibility
 
-ALWasp provides two separate compatibility workflows. Neither one is part of a normal `build` command.
+ALWasp provides package comparison and source validation. A build can opt into profile-bound baseline validation; `check` runs configured compatibility gates alongside the build.
 
 | Command | Inputs | Compiler required | Purpose |
 |---|---|---:|---|
@@ -62,8 +62,9 @@ alwasp validate compatibility `
   --ruleset .\dyce.ruleset.json
 ```
 
-To validate only apps changed since a Git reference, add `--changed-since`. Downstream apps that
-depend on a changed app are validated too. An unchanged local app needed only to compile a selected
+To validate only apps changed since a Git reference, add `--changed-since`. Only apps whose own
+files changed are validated by default. Add `--include-dependents` to also
+validate apps that transitively depend on them. An unchanged local app needed only to compile a selected
 app is built as a dependency without AppSourceCop:
 
 ```powershell
@@ -83,8 +84,9 @@ Directory mode:
 - matches projects to baselines by app ID, never by filename;
 - rejects duplicate project IDs and multiple baselines matching the same project;
 - validates matched projects in dependency order;
-- reports unmatched projects as new and skips them unless a matched app depends on them;
-- compiles required new local dependency apps first without AppSourceCop;
+- validates unmatched apps from current source against the selected BC target, with configured
+  non-baseline analyzers and without AppSourceCop; their compatibility verdict is N/A;
+- compiles required local dependency apps first without AppSourceCop;
 - after a matched app fails AppSourceCop, compiles it once without AppSourceCop and stages the
   package for downstream validations while preserving the original failure;
 - makes every package under `--baseline-directory` available as a historical dependency;
@@ -100,7 +102,7 @@ alwasp validate compatibility `
   --ruleset .\dyce.ruleset.json
 ```
 
-The final summary separates validation results, prepared local dependencies, skipped new apps, failures, and total processing time.
+The final summary separates baseline compatibility verdicts, current-source validation, prepared local dependencies, failed apps/dependencies, and total processing time. Source or analyzer failures fail the command even when compatibility is N/A.
 
 ### Select specific apps
 
@@ -115,8 +117,8 @@ alwasp validate compatibility --project-root ./src --get-baseline-symbols --app 
 
 Names match case-insensitively. Repeated selections are deduplicated; unknown or ambiguous
 selectors fail with an error. Use a GUID or path to disambiguate matching names. `--app` is
-available only in directory mode, including the inferred current-directory root used by
-`--get-baseline-symbols`.
+available with `--project-root` and `--workspace`, including the inferred current-directory root
+used by `--get-baseline-symbols`. Workspace paths are relative to the workspace file directory.
 
 Only selected apps receive baseline downloads and compatibility checks. Required local
 dependencies still compile without becoming validation roots. `--changed-since` can further
@@ -145,8 +147,10 @@ replaces that baseline feed and also participates in dependency restore. Existin
 `ALWASP_PAT`, `--feed-token-env`, `--nuget-config`, and `--auth-mode` settings apply.
 
 Downloaded packages are matched by app ID, stored temporarily outside the project tree, and
-removed after the run. Apps without a published stable baseline are reported and skipped; no
-matches or a feed/download error fails the command. Baseline versions are independent of the
+removed after the run. Apps without a published stable baseline are source-validated without
+AppSourceCop and report
+compatibility N/A. An all-unpublished selection succeeds if its source checks pass; feed/download
+errors still fail and are never treated as unpublished apps. Baseline versions are independent of the
 current app version and `--bc-target`.
 
 When the current directory contains `app.json`, `--get-baseline-symbols` defaults the project root
@@ -193,7 +197,7 @@ alwasp validate compatibility release
 alwasp validate compatibility --profile appsource
 ```
 
-Compatibility validation always enables AppSourceCop for this command. By default it remains separate from `alwasp build`, so running both stages intentionally compiles the source twice — unless the profile opts into build-integrated validation, below.
+Compatibility validation enables AppSourceCop when an app has a baseline; source-only checks use the configured non-baseline analyzers. By default it remains separate from `alwasp build`, so running both stages intentionally compiles the source twice — unless the profile opts into build-integrated validation, below.
 
 `validate compatibility` temporarily applies the effective build-time `applicationInsights`
 setting to each selected project's `app.json` before compiling, and restores the original file
@@ -248,3 +252,65 @@ When a symbols feed lags behind a preview or artifact-provided Business Central 
 If a direct dependency allows an older package but a transitive dependency requires a newer one,
 ALWasp resolves the package again at the stricter minimum. Repeated AppIds are skipped only when
 the version already restored satisfies the later requirement.
+
+## Workspace and source-only validation
+
+```bash
+alwasp validate compatibility --workspace Apps.code-workspace --get-baseline-symbols --app Core
+alwasp validate compatibility --project-root ./src
+alwasp validate compatibility --workspace Apps.code-workspace --changed-since origin/main
+```
+
+Workspace discovery includes only folders directly containing app.json, without recursion.
+Workspace changed-only validation requires one Git repository. Direct workspace selection cannot
+be combined with `--project`, `--project-root`, or configured target/config selection.
+
+In project-root/workspace mode, baseline sources are optional. Without `--baseline-directory` or
+`--get-baseline-symbols`, all selected production apps (or the changed selection) are compiled
+and analyzed from current source without AppSourceCop. `--baseline-directory` requires project-root
+or workspace mode. Single `--project` mode still requires `--baseline`.
+
+Ruleset discovery falls back from project ruleset files to project `.vscode/settings.json`
+`al.ruleSetPath`, then the enclosing `.code-workspace`. `--ruleset` overrides discovery.
+
+## Production and test classification
+
+Discovered compatibility roots exclude confirmed test apps before baseline lookup. Any test
+codeunit establishes test status, including apps containing support libraries or fixtures.
+Unknown/incomplete source remains eligible with a warning. All preprocessor branches are read;
+ordinary conditionals do not cause unknown status or hide test codeunits. Malformed directives do.
+Explicit `apps`/`tests` configuration overrides inference, and explicit `--app`/`--project`
+selection retains the selected project. Test apps remain available for dependency compilation.
+An all-test discovered selection succeeds as N/A before baseline lookup.
+
+With changed-only validation, baseline downloads and warnings are limited to validated apps.
+The summary names changed apps and, when requested, their validated dependents.
+
+Structured results add `projectClassifications`, `skippedTestProjects`, `skippedTests`,
+`sourceValidatedProjects`, `sourceFailedProjects`, `sourceValidated`, and
+`compatibilityNotApplicable`. `newAppsSkipped` is removed. `notApplicable` is true only when
+nothing was validated. An all-unpublished `check` compatibility step passes after successful
+source validation, while baseline compatibility is N/A.
+
+## Validate multiple countries
+
+```bash
+alwasp validate compatibility --project-root ./src --get-baseline-symbols \
+  --bc-country de,us,w1 --max-parallel-countries 2
+```
+
+Country lists are trimmed, case-insensitive, and deduplicated in first-seen order.
+`--max-parallel-countries` is positive and defaults to `2`; `1` runs sequentially. Each country
+uses its own artifact, compiler/analyzers, package cache, and source copy. Apps compile in
+dependency order within a country. Baselines download once and are shared read-only. Output
+is replayed in input-country order; every country is reported and any failed country fails the
+command. Structured results add `bcCountries`, `maxParallelCountries`, `failedCountries`, and
+`countries`. Single-country runs and `check` are unchanged.
+
+## Published baselines in configuration
+
+The top-level [`compatibility.baseline.source: publishedSymbols` policy](/docs/configuration/#published-compatibility-baselines)
+enables latest stable baseline lookup for configured validation and `check`. Explicit per-app
+baselines take precedence. Lookup matches AppId across renamed packages/publishers and selects
+the highest stable version; equal versions prefer the current name. Authentication/feed errors
+and mismatched embedded AppIds fail validation.
