@@ -8,12 +8,14 @@ order: 3
 
 ALWasp restores AL symbol packages from NuGet feeds for a single project, a `.code-workspace`, or the selected projects in a config-driven build.
 
-When `workspace build` explicitly selects `--bc-target`, `--bc-version`, or `--bc-country`, its
+When `workspace build` selects an Insider `--bc-target`, `--bc-version`, or `--bc-country` alone, its
 Microsoft symbols come from the selected Business Central artifact instead. Partner dependencies
 continue through NuGet, including transitive dependencies and the existing feed/authentication
 options. Microsoft dependencies are excluded from that NuGet traversal. See
 [Workspace artifact selection](/docs/build/#business-central-artifact-selection) for the isolated
 package caches. Standalone `workspace restore` retains its existing NuGet behavior.
+`workspace build --bc-target current` also keeps NuGet symbols and tools; `--bc-country` then
+only selects localized NuGet packages.
 
 ```bash
 alwasp restore
@@ -138,3 +140,17 @@ The same feed, auth, country, and override settings can be supplied through `alw
 Restore masks embedded URL credentials and secret query parameters in NuGet feed log/error lines.
 Use the existing authentication options for private feeds; build effective-configuration reports
 apply the same protection to reported credentials and connection strings.
+
+## Workspace VS Code package caches
+
+Since 0.5.7, `workspace restore` reads `al.packageCachePath` from project
+`.vscode/settings.json`, then the selected `.code-workspace` settings. `--packages` overrides
+these settings. A value can be a string or array, and relative paths resolve against each project
+folder. Cache entries are combined in project order; restore writes only the first cache and
+warns that additional entries are not used. Without an effective entry, the default remains
+`.alpackages` beside the workspace file.
+
+`workspace restore` does not apply compiler or output-folder settings. It recognizes
+`al.nugetFeeds` and `al.symbolsCountryRegion` without applying them; use CLI or ALWasp
+configuration for feeds and localization. The restore summary reports detected settings,
+their sources, cache, mode, status, and duration; structured results include `alSettings`.

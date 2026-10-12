@@ -80,6 +80,7 @@ Config-driven options include:
 - `--profile <name>`
 - `--manifest [path]` — defaults to `.alwasp/build-manifest.json` when the path is omitted
 - `--continue-on-error`
+- `--diagnostics` (alias `--diagnostic`) — list individual compiler errors and analyzer warnings
 - `--changed-since <ref>`
 - `--plan <path>` — consume a plan from `alwasp plan` instead of resolving selection directly;
   cannot be combined with a positional target or `--profile`; `--changed-since` may be supplied
@@ -306,13 +307,48 @@ packaged sources, glossary, and terminology; it excludes project selection and `
 ## artifacts download
 
 ```bash
-alwasp artifacts download --target next-major --country DE
-alwasp artifacts download --version 27.1 --output .alwasp/artifacts
+alwasp artifacts download --bc-target next-major --bc-country DE
+alwasp artifacts download --bc-version 27.1.0.0
 ```
 
 Downloads, verifies, and caches Business Central artifacts independently of compatibility
-validation. Use `--target <current|next-minor|next-major>` or pin `--version <version>`;
-`--country <code>` selects localization and defaults to `W1`.
+validation. Use `--bc-target <next-minor|next-major>` or pin a concrete four-part
+`--bc-version <version>`; `--bc-country <code>` selects localization and defaults to `W1`.
+There is no `--output` option; artifacts use the shared artifact cache.
+
+
+## artifacts resolve
+
+```bash
+alwasp artifacts resolve
+alwasp artifacts resolve --bc-target next-major --bc-country DE
+alwasp artifacts resolve --verbose
+alwasp artifacts resolve --format json --result-file resolved.json
+```
+
+Read-only lookup of concrete Business Central versions and matching Application/Platform artifact
+URLs. Only artifact indexes are read; no artifact is downloaded, extracted, or cached.
+
+- `--bc-target <current|next-minor|next-major>` resolves one target; omit it for all three.
+- `--bc-country <code>` selects one country, case-insensitively; default `W1`.
+- `-v|--verbose` includes URLs in the all-target text table; single-target text always includes them.
+- `-q|--quiet`, `--format text|json|ndjson`, and `--result-file <path>` follow standard output controls.
+
+`current` resolves the newest released version with matching country and platform artifacts.
+This lookup does not change `build --bc-target current` or `workspace build --bc-target current`,
+which retain NuGet symbols and tools. Insider targets use the same resolution as artifact builds
+and may resolve to the same version. Each URL pair belongs to one concrete version.
+
+One-target JSON exposes `data.target`, `version`, `country`, `source`, and
+`artifacts.application` / `artifacts.platform`. All-target JSON uses `data.results` in the order
+`current`, `next-minor`, `next-major`; failed entries contain `target` and `error`.
+NDJSON emits an `artifactResolved` event per successful target and a final result.
+Exit `0` means all requested targets resolved; exit `1` means failure. In all-target mode,
+failures are reported individually and any failed target fails the command.
+
+```bash
+VERSION=$(alwasp artifacts resolve --bc-target next-major --format json | jq -r .data.version)
+```
 
 ## validate translations
 
@@ -349,9 +385,13 @@ alwasp workspace build [workspacePath]
 
 Workspace commands operate directly on `.code-workspace` files. They remain useful as low-level operations, but config-driven `alwasp build` is preferred for multi-project repositories.
 
+Supported VS Code AL settings are read per project; explicit CLI options win. See
+[Workspace settings](/docs/build/#vs-code-al-settings-for-workspace-builds).
+
 Common `workspace build` options:
 
-- `--bc-target <next-minor|next-major>` — Insider artifact; excludes `--bc-version`
+- `--bc-target <current|next-minor|next-major>` — `current` uses NuGet symbols/tools;
+  Insider targets use artifacts; excludes `--bc-version`
 - `--bc-version <version>` — exact four-part released build or latest match for a two-/three-part
   version; excludes `--bc-target`
 - `--bc-country <code>` — artifact country, default `W1`; country alone selects the latest

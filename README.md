@@ -72,7 +72,30 @@ For example, tool version `0.2.1` corresponds to documentation package version `
 tag `v0.2.1`. Matching tags keep documentation history aligned with the exact CLI and schema it
 describes and give the next release a clear comparison baseline.
 
-## License
+
+## Visual CLI help
+
+The standalone page at [alwasp.dev/alwasp-cli-reference.html](https://alwasp.dev/alwasp-cli-reference.html)
+is generated from released CLI help snapshots. It has no external dependencies, remains readable
+without JavaScript, and supports direct links such as `#c-build`, `#c-workspace-build`, and
+`#c-artifacts-resolve`. ALWasp can open these links as visual command help.
+
+For a release refresh, read the target tag from the local product repository:
+
+```bash
+node scripts/generate-cli-reference.mjs --source ../alwasp --tag v<tool-version>
+```
+
+Alternatively, supply a folder containing all `tests/product-contract/help/*.txt` files
+retrieved at that release tag with `--snapshots <folder> --tag v<tool-version>`.
+The refresh updates `scripts/cli-reference/help.json` and `public/alwasp-cli-reference.html`;
+commit both. Then synchronize the documentation package version as described above.
+
+For appearance changes, edit `scripts/cli-reference/template.html` and run
+`npm run generate:cli-reference`. Do not edit the generated HTML directly.
+`npm run check:cli-reference` validates that the page is current and its snapshot version
+matches `package.json`; `npm run build` runs this check automatically.
+\n## License
 
 The documentation website source and other contents of this repository are licensed under the
 [MIT License](./LICENSE). This license does not apply to the ALWasp tool itself.

@@ -213,7 +213,8 @@ Common fields:
 - `maxCpuCount`: passed to `altool workspace compile`.
 - `logDirectory`: where `altool` logs are written.
 - `manifest`: default config-driven build manifest path.
-- `diagnostics`: parse and display compiler diagnostics from logs.
+- `diagnostics`: parse and display individual compiler errors and analyzer warnings from logs
+  (also enabled by `build --diagnostics`, alias `--diagnostic`). Summaries always include per-analyzer totals.
 - `continueOnError`: continue with later groups/profiles after a failed group.
 - `bcVersion`: fallback Business Central version for Application Insights `auto` mode.
 - `sourceUrl` / `sourceCommit`: optional manifest metadata.
@@ -390,3 +391,12 @@ determine classification rather than names. Unknown source enters generated `app
 and needs review. Explicit valid `apps`/`tests` entries override later discovery inference.
 Configuration validation rejects duplicate app manifest GUIDs across both lists, as well as
 duplicate configured IDs and physical paths.
+
+## VS Code AL settings
+
+Low-level `workspace restore` and `workspace build` read supported AL settings from the selected
+workspace and project settings files. See [Workspace settings](/docs/build/#vs-code-al-settings-for-workspace-builds)
+for cache paths, analyzers, rulesets, parallelism, output folders, and precedence, and
+[Workspace restore caches](/docs/restore/#workspace-vs-code-package-caches). Configured builds
+keep their `alwasp.json` settings. Directory builds discover VS Code rulesets when no explicit
+ruleset or project ruleset file is selected.

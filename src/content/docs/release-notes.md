@@ -6,6 +6,29 @@ order: 10
 
 # Release Notes
 
+## 0.5.7 — 2026-10-11
+
+- `artifacts resolve` looks up concrete BC versions and Application/Platform URLs for `current`,
+  `next-minor`, `next-major`, or all three, with one country and JSON/NDJSON output. It reads
+  indexes without downloading or caching artifacts; any unresolved requested target fails.
+- Workspace restore/build read supported VS Code AL settings. Project settings override workspace
+  settings and explicit CLI options win, including explicit false values. Relative paths resolve
+  per project. Restore writes the first package cache; build also reads additional caches.
+- Workspace builds honor per-project rulesets, analyzers, parallelism, and output folders, compiling
+  differing settings in dependency order. Summaries report settings and sources, compile groups,
+  durations, outputs, and diagnostics; structured results include `alSettings` and effective settings.
+- Build summaries count errors/warnings per analyzer. `build --diagnostics` lists individual
+  findings; workspace diagnostics now include warnings. Human output summaries list folders,
+  while structured build results retain the full output list.
+- `workspace build --bc-target current` uses NuGet symbols/tools; country only selects localized
+  packages in this mode. Country alone, pinned versions, and Insider targets still use artifacts.
+- **Migration:** an empty project `al.ruleSetPath` disables a workspace ruleset, and a configured
+  ruleset path pointing to a missing file now fails build/check/compatibility instead of being
+  ignored. Compatibility `--workspace` reads rulesets from the selected workspace file.
+
+See [Build](/docs/build/), [Restore](/docs/restore/), and
+[Artifact lookup](/docs/cli-reference/#artifacts-resolve).
+
 ## 0.5.6 — 2026-10-09
 
 - Build projects without configuration using `build --project` or recursive `--project-root`,

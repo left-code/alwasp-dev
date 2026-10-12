@@ -158,7 +158,9 @@ alwasp workspace build --bc-target next-major
 alwasp workspace build --bc-version 27.5 --bc-country DE
 ```
 
-`--bc-target` accepts `next-minor` or `next-major` and cannot be combined with `--bc-version`.
+`--bc-target` accepts `current`, `next-minor`, or `next-major` and cannot be combined with `--bc-version`.
+`current` uses NuGet symbols and the ordinary compiler, without a BC artifact; with this target,
+`--bc-country` only selects localized NuGet packages.
 A four-part version pins an exact released build; a two- or three-part version selects the latest
 matching build. A major version alone is rejected. Country codes are case-insensitive and default
 to `W1`. With country alone, ALWasp selects the latest released artifact in the highest
@@ -181,8 +183,9 @@ ALWasp process is skipped with a warning. Unrelated files remain in place.
 
 The selected artifact must include `altool` with workspace compilation support. Otherwise the
 build fails instead of substituting another compiler. Explicit artifact selection does not use
-`AL_PATH` or `ALC_PATH` overrides. Omitting all three options preserves the existing NuGet restore,
-package-folder, and compiler-resolution behavior.
+`AL_PATH` or `ALC_PATH` overrides. Omitting all three options, or selecting `--bc-target current`,
+uses the ordinary NuGet restore and compiler-resolution behavior, with package folders from CLI
+options, supported VS Code settings, or defaults.
 
 ## Generated paths and failure diagnostics
 
@@ -255,7 +258,67 @@ Credentials, secret URL parameters, bearer tokens, and connection strings are re
 
 Directory-mode builds discover a project ruleset first (`ruleset.json`, then `*.ruleset.json`),
 then `al.ruleSetPath` in project `.vscode/settings.json`, then an enclosing `.code-workspace`.
-Settings paths resolve relative to the project folder; missing files are ignored. Workspace
+Settings paths resolve relative to the project folder. An explicit empty project `al.ruleSetPath`
+disables the workspace setting; a configured path pointing to a missing file fails the command. Workspace
 discovery requires a single workspace file at the enclosing level. An explicit CLI ruleset wins.
 Diagnostics count only logs rewritten by the current compile group,
 so earlier groups' warnings cannot fail a later group.
+
+### VS Code AL settings for workspace builds
+
+Since 0.5.7, `workspace build` reads the selected workspace's `settings` and each project's
+`.vscode/settings.json`. Explicit CLI options override project settings, which override workspace
+settings, then defaults. The low-level command validates `alwasp.json` but does not take build
+settings from it; use config-driven `build` for profiles and per-project configuration.
+
+| Setting | Workspace build behavior |
+|---|---|
+| `al.packageCachePath` | String or array of symbol-cache paths; combine entries across projects, with the first as the shared writable cache and the rest read-only |
+| `al.ruleSetPath` | Per-project ruleset; an empty value disables the workspace ruleset |
+| `al.enableCodeAnalysis` / `al.codeAnalyzers` | Enable the listed built-in cops or local analyzer assemblies only when code analysis is enabled |
+| `al.compilationOptions.maxDegreeOfParallelism` | Positive integer controlling compile parallelism |
+| `al.compilationOptions.outFolder` / `al.packageOutputPath` | Copy each project's compiled app into its own output folder; the compilation outFolder setting takes priority |
+
+All relative settings paths resolve against each project folder, even when declared in the
+workspace file. For sibling project folders, `../.alpackages` names a shared cache. Comments and
+trailing commas in settings files are accepted. Explicit `false` and empty values stop fallback
+to workspace settings. CLI analyzer flags override their corresponding settings individually,
+including explicit `false`; `--outfolder` collects all projects into one folder instead of the
+settings-defined folders.
+
+For example, add this `settings` object to a workspace containing sibling AL project folders:
+
+```json
+{
+  "settings": {
+    "al.packageCachePath": "../.alpackages",
+    "al.enableCodeAnalysis": true,
+    "al.codeAnalyzers": ["${CodeCop}", "${UICop}"],
+    "al.compilationOptions.maxDegreeOfParallelism": 4,
+    "al.packageOutputPath": "./output"
+  }
+}
+```
+
+Projects with different effective rulesets, analyzers, or parallelism compile in dependency-ordered
+groups, one `altool workspace compile` run per group. Identical ruleset contents can share a group.
+A failed group stops subsequent groups. BC artifact builds retain their isolated cache and do not
+use additional settings-defined caches.
+
+Missing configured ruleset files, invalid active analyzer tokens or missing analyzer assemblies,
+and non-positive parallelism fail before compilation. Malformed settings files or wrong value
+types produce warnings. `al.nugetFeeds` and `al.symbolsCountryRegion` are recognized but not
+applied; use ALWasp's feed/country options. Effective settings and their origin appear in
+`alSettings` in structured results. Workspace builds also report `effectiveConfiguration`,
+including per-project settings with `vscodeProject` / `vscodeWorkspace` provenance, compile-group
+durations, diagnostics, output folders, and the outcome.
+
+### Analyzer findings
+
+Build summaries count compiler and analyzer errors/warnings separately (CodeCop, AppSourceCop,
+UICop, and other cops). Use `build --diagnostics` (alias `--diagnostic`) or
+`workspace.diagnostics: true` in `alwasp.json` for configured builds to list individual findings.
+`workspace build --diagnostics` lists warnings as well as errors.
+
+The human `Outputs:` summary lists output folders. Structured build results retain the full
+output list and add per-analyzer totals under `effectiveConfiguration.diagnostics.analyzers`.

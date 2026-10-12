@@ -271,7 +271,11 @@ and analyzed from current source without AppSourceCop. `--baseline-directory` re
 or workspace mode. Single `--project` mode still requires `--baseline`.
 
 Ruleset discovery falls back from project ruleset files to project `.vscode/settings.json`
-`al.ruleSetPath`, then the enclosing `.code-workspace`. `--ruleset` overrides discovery.
+`al.ruleSetPath`, then the enclosing `.code-workspace`. With `--workspace`, the selected file
+supplies workspace settings even when it is outside the project ancestors. Relative paths resolve
+from each project folder. An explicit empty project value disables the workspace ruleset; a
+configured path pointing to a missing file fails validation. `--ruleset` overrides discovery.
+The same ruleset resolution applies to directory builds and `check`.
 
 ## Production and test classification
 

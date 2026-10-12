@@ -1,6 +1,6 @@
 {
   "name": "alwasp-docs-site",
-  "version": "0.5.6",
+  "version": "0.5.7",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -16,7 +16,10 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "generate:cli-reference": "node scripts/generate-cli-reference.mjs",
+    "check:cli-reference": "node scripts/generate-cli-reference.mjs --check",
+    "prebuild": "npm run check:cli-reference"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

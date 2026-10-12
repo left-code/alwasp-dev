@@ -142,6 +142,44 @@ Update all affected examples consistently.
 
 Pay special attention to changes that can leave old examples technically valid but misleading.
 
+## Visual CLI reference synchronization
+
+Publish the standalone visual help page at:
+
+`public/alwasp-cli-reference.html` → `https://alwasp.dev/alwasp-cli-reference.html`
+
+Regenerate it for every target release from the authoritative product-contract help snapshots,
+rather than copying the product repository's HTML (its embedded command data can be stale).
+
+With the product repository available locally, run from the documentation repository:
+
+```bash
+node scripts/generate-cli-reference.mjs --source ../alwasp --tag <TARGET_TAG>
+```
+
+This reads only `tests/product-contract/help/*.txt` at the supplied Git tag, updates
+`scripts/cli-reference/help.json` and generates the static HTML. It does not modify the
+product repository or use its working tree. Refresh before the version synchronization step;
+after `npm version`, the snapshot version must equal the package version.
+
+If using GitHub access instead, retrieve the complete help snapshot directory at `TARGET_TAG`
+into a temporary local folder, then run:
+
+```bash
+node scripts/generate-cli-reference.mjs --snapshots <snapshot-folder> --tag <TARGET_TAG>
+```
+
+Commit both the snapshot JSON and generated HTML. The template and generator are maintained at
+`scripts/cli-reference/template.html` and `scripts/generate-cli-reference.mjs`.
+For layout-only changes, regenerate from the committed snapshots with
+`npm run generate:cli-reference`. Do not manually edit the generated HTML.
+
+Verify search, copy controls, version display, and direct command anchors such as
+`#c-build` and `#c-artifacts-resolve`. Preserve the standalone page and stable command anchors
+so ALWasp can open visual help without depending on the site's application shell.
+Run `npm run check:cli-reference`; the site build also runs this check automatically.
+Confirm the build copies the page unchanged to `dist/alwasp-cli-reference.html`.
+
 ## Version synchronization
 
 Only after all documentation for `TARGET_TAG` is complete:
@@ -182,6 +220,7 @@ Also verify:
 6. Default paths and filenames match the target release.
 7. Internal/private implementation details have not leaked into public documentation.
 8. Links between documentation pages resolve using the site's existing route conventions.
+9. The visual CLI reference matches the target version, passes the freshness check, and is copied unchanged to dist/alwasp-cli-reference.html.
 
 ## Report
 
@@ -193,6 +232,7 @@ At completion, report:
 - important user-visible changes found
 - documentation files changed
 - schema synchronization result
+- visual CLI reference generation and validation result
 - validation commands run
 - any source changes intentionally not documented because they are internal-only
 - any commits after `TARGET_TAG` intentionally excluded as unreleased
