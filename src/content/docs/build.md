@@ -260,7 +260,10 @@ Directory-mode builds discover a project ruleset first (`ruleset.json`, then `*.
 then `al.ruleSetPath` in project `.vscode/settings.json`, then an enclosing `.code-workspace`.
 Settings paths resolve relative to the project folder. An explicit empty project `al.ruleSetPath`
 disables the workspace setting; a configured path pointing to a missing file fails the command. Workspace
-discovery requires a single workspace file at the enclosing level. An explicit CLI ruleset wins.
+discovery uses only the nearest ancestor level with a single workspace file whose `folders` list
+the project. Unrelated workspaces are ignored and farther workspaces do not supply fallback settings.
+An explicit CLI ruleset wins. For `build` and `workspace build`, a bare or empty `--ruleset`
+is treated as omitted, allowing normal discovery (useful for empty pipeline variables).
 Diagnostics count only logs rewritten by the current compile group,
 so earlier groups' warnings cannot fail a later group.
 

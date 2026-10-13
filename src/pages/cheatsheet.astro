@@ -8,7 +8,7 @@ const commandGroups = [
     tone: "border-wasp-300 bg-wasp-100/70",
     commands: [
       ["Install", "dotnet tool install --global left-code.AlWasp"],
-      ["Discover projects", "alwasp init"],
+      ["Discover projects", "alwasp config init"],
       ["Validate config", "alwasp config validate"],
       ["Build default target", "alwasp build"]
     ]
@@ -34,7 +34,9 @@ const commandGroups = [
     title: "Versions and tools",
     tone: "border-ink-500 bg-ink-100",
     commands: [
+      ["Preview versions", "alwasp version resolve --project-root ./src"],
       ["Apply versions", "alwasp version apply release"],
+      ["Preview artifact cleanup", "alwasp artifacts prune --dry-run"],
       ["Check AL tools", "alwasp tools update --check"],
       ["Update AL tools", "alwasp tools update --clean"],
       ["Fresh package ID", "alwasp app set-package-id MyApp.app"]
@@ -52,6 +54,7 @@ const commandGroups = [
       ["Prepare translation", "alwasp translation prepare fr-FR --context de-DE"],
       ["Validate returned XLIFF", "alwasp translation validate ./MyApp.fr-FR.xlf"],
       ["Compare packages", "alwasp compare old.app new.app --json out.json"],
+      ["BC target matrix", "alwasp validate compatibility --project-root ./src --bc-target current,next-minor,next-major --max-parallel-processing 2"],
       ["Structured output", "alwasp restore --format json"]
     ]
   }
@@ -78,7 +81,7 @@ const changeRefs = [
           <div class="flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-wasp-300">
             <span>ALWasp field guide</span>
             <span class="h-px w-12 bg-wasp-300/60"></span>
-            <span class="text-ink-200">v0.5.7</span>
+            <span class="text-ink-200">v0.5.8</span>
           </div>
           <h1 class="mt-5 text-4xl font-semibold tracking-tight sm:text-6xl">Build AL without breaking your flow.</h1>
           <p class="mt-5 max-w-3xl text-lg leading-8 text-ink-200">
@@ -96,7 +99,7 @@ const changeRefs = [
             <span class="rounded-full bg-mint-500/20 px-2.5 py-1 text-xs font-semibold text-mint-100">4 steps</span>
           </div>
           <ol class="mt-4 space-y-3 font-mono text-sm">
-            <li><span class="mr-3 text-wasp-300">01</span>alwasp init</li>
+            <li><span class="mr-3 text-wasp-300">01</span>alwasp config init</li>
             <li><span class="mr-3 text-wasp-300">02</span>alwasp config validate</li>
             <li><span class="mr-3 text-wasp-300">03</span>alwasp build ci</li>
             <li><span class="mr-3 text-wasp-300">04</span>alwasp validate compatibility</li>
@@ -286,7 +289,7 @@ const changeRefs = [
       </section>
 
       <div class="flex flex-col gap-3 border-t border-ink-200 pt-6 text-sm text-ink-500 sm:flex-row sm:items-center sm:justify-between">
-        <span>ALWasp cheatsheet · documentation for v0.5.7</span>
+        <span>ALWasp cheatsheet · documentation for v0.5.8</span>
         <div class="flex gap-4 font-semibold">
           <a href="/docs/getting-started/" class="text-mint-700 hover:underline">Getting started</a>
           <a href="/examples/" class="text-mint-700 hover:underline">Examples</a>

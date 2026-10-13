@@ -275,7 +275,10 @@ Ruleset discovery falls back from project ruleset files to project `.vscode/sett
 supplies workspace settings even when it is outside the project ancestors. Relative paths resolve
 from each project folder. An explicit empty project value disables the workspace ruleset; a
 configured path pointing to a missing file fails validation. `--ruleset` overrides discovery.
-The same ruleset resolution applies to directory builds and `check`.
+The same ruleset resolution applies to directory builds and `check`. Automatic workspace discovery
+uses only the nearest ancestor workspace whose `folders` list the project (and requires a single
+workspace file at that level). Unrelated ancestor workspaces are ignored; farther workspaces do
+not fill in missing settings. A bare or empty `--ruleset` is treated as omitted, preserving discovery.
 
 ## Production and test classification
 
@@ -296,20 +299,62 @@ Structured results add `projectClassifications`, `skippedTestProjects`, `skipped
 nothing was validated. An all-unpublished `check` compatibility step passes after successful
 source validation, while baseline compatibility is N/A.
 
-## Validate multiple countries
+<a id="validate-multiple-countries"></a>
+
+## Validate multiple targets and countries
 
 ```bash
 alwasp validate compatibility --project-root ./src --get-baseline-symbols \
-  --bc-country de,us,w1 --max-parallel-countries 2
+  --bc-target current,next-minor,next-major --bc-country de,us,w1 \
+  --max-parallel-processing 2
 ```
 
-Country lists are trimmed, case-insensitive, and deduplicated in first-seen order.
-`--max-parallel-countries` is positive and defaults to `2`; `1` runs sequentially. Each country
-uses its own artifact, compiler/analyzers, package cache, and source copy. Apps compile in
-dependency order within a country. Baselines download once and are shared read-only. Output
-is replayed in input-country order; every country is reported and any failed country fails the
-command. Structured results add `bcCountries`, `maxParallelCountries`, `failedCountries`, and
-`countries`. Single-country runs and `check` are unchanged.
+Target and country lists are trimmed, case-insensitive, and deduplicated in first-seen order.
+Target lists cannot be combined with `--bc-version`; empty target entries fail. Each combination
+has its own source copy, package cache, and matching compiler/analyzers. Apps compile in dependency
+order within a combination; `current` uses NuGet tools and symbols. Baselines download once and
+are shared read-only. Summaries report every combination in target order, then country order;
+live progress identifies each started app, for example `[next-minor/US] Validating ...`.
+
+`--max-parallel-processing` must be positive. By default all combinations run concurrently, capped
+at half the logical processors (at least one); `1` runs sequentially. It replaces
+`--max-parallel-countries`, whose default was `2`; update existing scripts.
+
+When the targets include `current`, failures on `next-minor` or `next-major` are warnings and do
+not fail the command. Current failures remain fatal. Add `--fail-on-next` to make all failures
+fatal. Runs without `current` fail on any combination failure.
+
+Multi-combination structured results include `bcTargets`, `bcCountries`, `maxParallelProcessing`,
+`failOnNext`, `failedCells`, `warningCells`, `failedCountries`, and `countries`. Each `countries`
+entry includes `target` and `failurePolicy` (`fail` or `warn`); a warning cell still has failed
+status. `maxParallelCountries` is replaced by `maxParallelProcessing`.
+
+### Cross-country Microsoft dependencies
+
+Artifact validation stages only the Microsoft packages needed by the app, its baseline, and
+cached partner dependencies, followed transitively, plus the platform. Unreadable package
+manifests are still staged. Microsoft symbols normally come from the selected country's artifact.
+If a localization app is absent there, ALWasp looks for the same AppId in another country artifact
+of the same BC version, including its missing Microsoft dependencies. Other countries requested
+by the run are tried first and downloaded if needed, then other already-cached countries.
+If no country supplies the app, a warning identifies it before the compiler reports it missing.
+
+### Artifact cache cleanup
+
+After compatibility validation using pinned or Insider artifacts, ALWasp cleans
+`~/.alwasp/artifacts`. It removes Insider artifacts, builds superseded by a newer cached build
+of the same major/minor and country once unused for a day, and artifacts unused for 14 days.
+Artifacts another process is using are retained. Temporary run directories left by interrupted
+runs are removed once a day old. Structured results include `artifactCleanup` when cleanup runs.
+
+Use `--keep-artifacts` to skip automatic artifact cleanup for one run, or set
+`ALWASP_ARTIFACT_CLEANUP=off` to disable it. For cleanup on demand, use
+[`artifacts prune`](/docs/cli-reference/#artifacts-prune), optionally with `--dry-run`,
+`--older-than`, or `--all`.
+
+Feed package metadata is shared across restores in a validation run, including the compatibility
+step of `check`. This reduces repeated queries while preserving per-restore version selection;
+failed feed queries are retried on the next restore.
 
 ## Published baselines in configuration
 

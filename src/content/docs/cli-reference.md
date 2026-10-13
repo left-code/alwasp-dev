@@ -169,15 +169,18 @@ cannot be combined. Search/prepare accept `--max-candidates`; prepare also accep
 `--max-objects`, and `--output` (default `.alwasp/context/`). Object/usages return `2` for ambiguity.
 See [Agent Context](/docs/context/) for bounds, schemas, diagnostics, and usage limitations.
 
-## init
+<a id="init"></a>
+
+## config init
 
 ```bash
-alwasp init
-alwasp init --force
-alwasp init --include-tests
+alwasp config init
+alwasp config init --force
+alwasp config init --include-tests
 ```
 
 Creates an `alwasp.json` starter config in the current directory.
+Since 0.5.8, the top-level `init` command is removed with no alias; use `config init`.
 
 Scans direct child projects and classifies source. Confirmed tests are omitted by default;
 `--include-tests` puts them in `tests`. Unknown source enters `apps` with a review warning.
@@ -192,18 +195,44 @@ alwasp config validate --config path/to/alwasp.json
 
 Exits `0` when valid and `1` when errors are found.
 
-## version apply
+<a id="version-apply"></a>
+<a id="version-resolve"></a>
+
+## version resolve / apply
 
 ```bash
 alwasp version apply [targetOrProfile]
 alwasp version apply --profile appsource
 alwasp version apply --changed-since latest:v*
 alwasp version apply --changed-since "latest-merge:version-increase"
+alwasp version resolve --project-root ./src --release-type Preview
+alwasp version apply --project ./App --release-type Dev
 ```
 
-Permanently writes calculated versions and configured internal dependency version updates to selected projects' `app.json` files. It does not restore, compile, commit, tag, or push.
+`version apply` permanently writes calculated versions and configured internal dependency version updates to selected projects' `app.json` files. It does not restore, compile, commit, tag, or push.
 
-`versioning.releaseType` accepts `Release`, `Preview`, or `None`. Release and Preview periods switch on the Friday closest to the 15th of each month; see [Release and Preview periods](/docs/configuration/#release-and-preview-periods) for the calculation table and boundary example.
+`version resolve` uses the same selection and calculation without applying changes. Its structured
+result reports current/next versions and `wouldUpdate` instead of `updated`.
+
+Both commands support configured target/profile selection or direct `--project <dir>` /
+recursive `--project-root <dir>` selection without `alwasp.json`. Direct selection excludes a
+positional target/profile, `--profile`, and `--config`. Root mode accepts repeatable
+`--app <name|appId|relativePath>`. Each project is calculated from its own current version.
+
+Policy options override configured `versioning` fields:
+
+- `--release-type <Release|Preview|Dev|None>`; direct default `Release`
+- `--version-source <AppJson|Nuget>`; direct default `AppJson`. `Nuget` uses the latest published
+  version on the configured feeds, falling back to app.json by default; feed/auth options apply.
+  Explicit versions belong in configuration.
+- `--no-dependency-update` disables internal dependency version updates
+- `--dependency-update-scope <DirectlyChanged|AllVersioned>`; default `DirectlyChanged`
+
+In direct mode, `--changed-since` versions only apps whose own files changed;
+`--include-dependents` adds transitive dependents and requires `--changed-since`. Configured mode
+retains `versioning.applyTo` and `changeDetection` policy.
+
+`versioning.releaseType` accepts `Release`, `Preview`, `Dev`, or `None`. Release and Preview periods switch on the Friday closest to the 15th of each month; see [Release and Preview periods](/docs/configuration/#release-and-preview-periods) for the calculation table and boundary example.
 
 Both `build --changed-since` and `version apply --changed-since` accept `latest`, `latest:<glob>`, `latest-merge:<text>`, or an explicit tag, branch, or commit. `latest-merge` searches the head's first-parent history for the nearest matching merge message.
 
@@ -269,9 +298,13 @@ Options include:
 - `--include-dependents` also validates transitive dependents with `--changed-since`
 - `--packages <dir>` for current dependency packages
 - `--ruleset <file>` for compiler diagnostic severity overrides
-- `--bc-target <current|next-minor|next-major>`, `--bc-version <version>`, and
+- `--bc-target <current|next-minor|next-major>` (also comma-separated lists), `--bc-version <version>`, and
   `--bc-country <code,...>` select the Business Central artifacts used for validation
-- `--max-parallel-countries <N>` bounds concurrent country runs (positive, default `2`)
+- `--max-parallel-processing <N>` bounds concurrent target/country combinations (positive;
+  default all combinations, capped at half the logical processors; `1` runs sequentially)
+- `--fail-on-next` makes Insider failures fatal when the target list includes `current`;
+  otherwise they warn. Runs without `current` fail on any combination failure.
+- `--keep-artifacts` skips automatic artifact cleanup for this run
 - `--config <file>` / `--profile <name>` in config-driven mode
 - restore/feed/authentication options
 - `-v|--verbose` and `-q|--quiet`
@@ -279,6 +312,8 @@ Options include:
 Apps with baselines compile with AppSourceCop. Project-root/workspace mode permits no baseline
 source; apps lacking baselines still compile with non-baseline analyzers and report compatibility
 N/A. Discovered confirmed tests are excluded; explicit selection and configuration take precedence.
+Target lists exclude `--bc-version`. See [Compatibility](/docs/compatibility/#validate-multiple-targets-and-countries)
+for isolation, failure policy, result fields, and artifact cleanup.
 
 ## translation prepare / validate
 
@@ -322,6 +357,7 @@ There is no `--output` option; artifacts use the shared artifact cache.
 ```bash
 alwasp artifacts resolve
 alwasp artifacts resolve --bc-target next-major --bc-country DE
+alwasp artifacts resolve --bc-version 28.0 --bc-country DE
 alwasp artifacts resolve --verbose
 alwasp artifacts resolve --format json --result-file resolved.json
 ```
@@ -330,6 +366,9 @@ Read-only lookup of concrete Business Central versions and matching Application/
 URLs. Only artifact indexes are read; no artifact is downloaded, extracted, or cached.
 
 - `--bc-target <current|next-minor|next-major>` resolves one target; omit it for all three.
+- `--bc-version <version>` resolves one pinned version: a two-/three-part prefix selects the
+  newest released match; a full four-part version selects that build. It excludes non-current
+  `--bc-target`. Released artifacts are tried first; an exact build may fall back to Insider artifacts.
 - `--bc-country <code>` selects one country, case-insensitively; default `W1`.
 - `-v|--verbose` includes URLs in the all-target text table; single-target text always includes them.
 - `-q|--quiet`, `--format text|json|ndjson`, and `--result-file <path>` follow standard output controls.
@@ -349,6 +388,24 @@ failures are reported individually and any failed target fails the command.
 ```bash
 VERSION=$(alwasp artifacts resolve --bc-target next-major --format json | jq -r .data.version)
 ```
+
+## artifacts prune
+
+```bash
+alwasp artifacts prune --dry-run
+alwasp artifacts prune --older-than 7
+alwasp artifacts prune --all
+```
+
+Cleans `~/.alwasp/artifacts`: builds superseded in the same major/minor line and country once
+unused for a day, artifacts unused for `--older-than <days>` (positive, default `14`), and
+abandoned downloads older than a day. `--all` removes every completed artifact not in use;
+`--dry-run` reports without deleting. Artifacts used by another ALWasp process are retained.
+Non-dry runs also remove stale ALWasp temporary run directories older than a day.
+JSON/NDJSON and standard logging options are supported. Removal failures exit `1`.
+
+Automatic compatibility cleanup additionally removes Insider artifacts; see
+[Artifact cache cleanup](/docs/compatibility/#artifact-cache-cleanup).
 
 ## validate translations
 

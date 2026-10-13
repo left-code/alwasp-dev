@@ -221,7 +221,7 @@ Common fields:
 
 ### `versioning`
 
-Calculates effective app versions before build or during `alwasp version apply`.
+Calculates effective app versions before build or during `alwasp version resolve` / `apply`.
 
 Key choices:
 
@@ -238,6 +238,15 @@ Key choices:
 Set it at the top level for all profiles, or override individual fields per profile.
 
 Internal dependencies are matched by app GUID, so similarly named external packages are never changed. During `build`, dependency versions are temporary and the original `app.json` files are restored. During `version apply`, both the calculated project version and eligible internal dependency versions are written permanently.
+
+`version resolve` previews the same current/next versions and dependency changes. Both version
+commands also support direct `--project` / `--project-root` selection without configuration.
+`--release-type`, `--version-source`, `--no-dependency-update`, and `--dependency-update-scope`
+override the configured policy; supplying a policy override enables calculation. Direct mode
+defaults to enabled `Release` calculation from each app's own app.json version, dependency updates
+enabled, and `DirectlyChanged` scope. Direct `--changed-since` selects only directly changed apps;
+add `--include-dependents` for downstream apps. Configured mode retains `applyTo` and
+`changeDetection` settings. See [Version commands](/docs/cli-reference/#version-resolve).
 
 #### Release and Preview periods
 

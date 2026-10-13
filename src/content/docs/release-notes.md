@@ -6,6 +6,33 @@ order: 10
 
 # Release Notes
 
+## 0.5.8 — 2026-10-13
+
+- `version resolve` previews current/next versions and dependency updates; `version apply` writes
+  them. Both accept direct project/root selection without configuration, policy overrides, and
+  changed-only selection with optional dependents. Each app uses its own current version.
+- Compatibility accepts target lists and validates every target/country combination in isolation,
+  with live app progress. If `current` is included, Insider failures warn; use `--fail-on-next`
+  to make them fatal. Runs without `current` fail on any failure.
+- **Migration:** `init` moves to `config init` with no alias. Replace compatibility
+  `--max-parallel-countries` / `maxParallelCountries` with `--max-parallel-processing` /
+  `maxParallelProcessing`. The default is all combinations, capped at half the logical processors,
+  instead of two workers.
+- Artifact validation cleans Insider, superseded, and long-unused caches. Use `--keep-artifacts`
+  per run or `ALWASP_ARTIFACT_CLEANUP=off`; `artifacts prune` provides on-demand cleanup and dry runs.
+  Artifacts in use are retained. Interrupted-run temporary folders older than a day are swept.
+- `artifacts resolve --bc-version` looks up a released version or newest matching version prefix
+  without downloading artifacts; non-current `--bc-target` cannot be combined with it.
+- Bare or empty `--ruleset` values on build/workspace build/compatibility allow ordinary discovery.
+  Automatic workspace discovery now uses only the nearest workspace listing the project, avoiding
+  unrelated ancestor settings and rulesets.
+- Compatibility restores share feed metadata queries and stage only needed Microsoft artifact
+  symbols. Missing localization apps can come from another country artifact of the same BC version,
+  matched by AppId, preventing cross-country missing-symbol errors.
+
+See [CLI Reference](/docs/cli-reference/), [Compatibility](/docs/compatibility/), and
+[Versioning](/docs/configuration/#versioning).
+
 ## 0.5.7 — 2026-10-11
 
 - `artifacts resolve` looks up concrete BC versions and Application/Platform URLs for `current`,

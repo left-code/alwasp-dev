@@ -75,9 +75,15 @@ Workspace restore aggregates dependencies across all workspace projects, emits i
 11. Restore original `app.json` files
 12. Write manifest and print summary
 
-## Version apply pipeline
+<a id="version-apply-pipeline"></a>
+
+## Version commands
 
 `alwasp version apply` shares the same selection, validation, change detection, project-version, and internal-dependency planning code as config-driven build. It permanently writes the calculated top-level `version` and eligible internal `dependencies[].version` values to `app.json`; it does not restore, compile, or touch git.
+
+`version resolve` previews the same calculation. Both version commands accept direct project/root
+selection without configuration and calculate each project's version from its own current version.
+Direct changed-only selection excludes dependents unless `--include-dependents` is supplied.
 
 `InternalDependencyVersionPlanner` matches selected projects by app GUID and controls propagation through `dependencyUpdateScope`. External dependencies are excluded. The transformer performs targeted text replacements so version application preserves unrelated JSON text exactly.
 

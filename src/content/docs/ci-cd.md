@@ -137,10 +137,17 @@ local runs can use clickable paths. See [CLI output controls](/docs/cli-referenc
 Use `version apply` as a separate step when you want version changes committed by your pipeline:
 
 ```bash
+alwasp version resolve release --changed-since latest:v*
 alwasp version apply release --changed-since latest:v*
 ```
 
 ALWasp writes the calculated project versions and eligible internal dependency versions to `app.json`. Your pipeline owns `git commit`, tags, and push.
+
+`version resolve` previews the changes without applying them. Without configuration, use
+`--project-root ./src --changed-since origin/main`, with optional `--include-dependents` and
+`--release-type`. For compatibility target/country matrices, Insider failures warn when `current`
+is included; add `--fail-on-next` when previews must block CI. Use `--max-parallel-processing`
+to bound workers and `--keep-artifacts` when the next run should reuse Insider artifacts.
 
 With `versioning.includeDependencies: true` (the default), dependencies on selected internal projects are updated by app GUID. The default `dependencyUpdateScope: directlyChanged` propagates only versions of projects changed directly in git; use `allVersioned` when versions assigned to dependents should cascade through the whole selected graph.
 
