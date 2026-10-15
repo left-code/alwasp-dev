@@ -70,3 +70,24 @@ For each source:
 1. Feed-specific `--feed-token-env`
 2. Existing credentials from config/provider state
 3. PAT fallback
+
+## Symbol-package publication
+
+`symbols push` and `symbols publish` use the same credential precedence and auth modes for
+their single required `--source`. The source can be a NuGet v3 URL, a `nuget.config` source
+name, or a local folder. Interactive authentication is refused in CI.
+
+The push API key comes from `--api-key`, then `ALWASP_NUGET_API_KEY`, then `nuget.config`
+API keys. It is separate from source credentials: for Azure Artifacts, supply a PAT with
+Packaging read/write access and a non-empty API key such as `az`.
+
+```bash
+alwasp symbols publish ./output/MyApp.app \
+  --source https://pkgs.dev.azure.com/org/_packaging/feed/nuget/v3/index.json \
+  --auth-mode noninteractive --api-key az --skip-duplicate
+```
+
+Set `ALWASP_PAT` in the publication job's secret environment, rather than embedding it in the
+command. Push errors and NuGet log lines redact effective PATs, mapped tokens, API keys, and
+stored source passwords. Credentials are needed for writing; a feed may still allow anonymous
+restore. See [Symbol Packages](/docs/symbol-packages/) for validation and output behavior.

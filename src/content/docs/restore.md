@@ -59,6 +59,11 @@ When a dependency has no package ID, ALWasp generates:
 {Publisher}.{Name}.symbols.{AppGuid}
 ```
 
+Publisher and name keep only `[A-Za-z0-9_]`, and the app GUID is lowercase. The producer
+command `alwasp symbols pack` uses the same convention, so its packages can be resolved
+directly. See [Symbol Packages](/docs/symbol-packages/) to create and publish a feed's packages.
+Existing restore IDs and NuGet-based version lookup are unchanged in 0.5.9.
+
 It also tries canonical package ID variants, including inserted `.symbols.`, Microsoft application canonicalization, `Microsoft.Platform.symbols`, and a fallback GUID search across feeds.
 
 ## Resolution modes

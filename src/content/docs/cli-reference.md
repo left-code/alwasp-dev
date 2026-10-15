@@ -66,6 +66,31 @@ Common options:
 - `-v|--verbose`
 - `-q|--quiet`
 
+## symbols
+
+```bash
+alwasp symbols create <app> [--output <file-or-folder>]
+alwasp symbols pack <symbolApp> [--output <folder>]
+alwasp symbols push <package> --source <feed-or-folder>
+alwasp symbols publish <app> --source <feed-or-folder> [--output <folder>]
+```
+
+`create` uses ALTool to produce a verified symbol-only app. `pack` wraps it in a NuGet package
+using the app identity/version and explicit dependencies. `push` validates and publishes an
+existing package; `publish` runs all three stages and stops on the first failure. `build` never
+publishes automatically.
+
+- `pack` / `publish`: repeatable `--dependency-package-id <appId=packageId>` for dependencies
+  published under non-standard IDs.
+- `push` / `publish`: required `--source`, optional `--api-key` (fallback
+  `ALWASP_NUGET_API_KEY`, then `nuget.config`), `--skip-duplicate`, `--nuget-config`,
+  `--auth-mode`, `--feed-token-env`, and `--pat`.
+- All four support verbose/quiet and global structured-output options. Failures report
+  `failedStage`; NDJSON includes `symbols.stage` events.
+
+See [Symbol Packages](/docs/symbol-packages/) for defaults, validation rules, dependency
+mapping, and examples. The standalone visual CLI reference includes the full option lists.
+
 ## build
 
 ```bash

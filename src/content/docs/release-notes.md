@@ -6,6 +6,26 @@ order: 10
 
 # Release Notes
 
+## 0.5.9 — 2026-10-15
+
+- `symbols create` turns a compiled `.app` into a symbol-only app through ALTool without a
+  Business Central container. `symbols pack` produces a NuGet package using the app's identity,
+  version, and dependency minimums. Repeatable `--dependency-package-id` supports dependencies
+  published under non-standard IDs.
+- `symbols push` publishes verified packages to a NuGet v3 feed, configured source, or folder,
+  reusing restore credentials and adding API-key support and `--skip-duplicate`. Existing
+  non-standard package IDs can be preserved when moving packages between feeds.
+- `symbols publish` runs create → pack → push, stops at the first failure, and reports
+  `failedStage`; NDJSON reports stage events. **Build never publishes automatically.**
+- All stages require valid symbol metadata and ALTool confirmation that apps are symbol-only,
+  not runtime packages. Push validates the package/app identity before sending. Push output
+  redacts effective credentials, including API keys and stored source passwords.
+- Generated symbol package IDs remain compatible with restore and NuGet version lookup;
+  existing consumer configuration does not need migration.
+
+See [Symbol Packages](/docs/symbol-packages/), [Authentication](/docs/authentication/), and
+[CI/CD](/docs/ci-cd/#symbol-package-publication).
+
 ## 0.5.8 — 2026-10-13
 
 - `version resolve` previews current/next versions and dependency updates; `version apply` writes

@@ -56,7 +56,7 @@ jobs:
 steps:
   - task: UseDotNet@2
     inputs:
-      version: 8.x
+      version: 10.x
 
   - task: NuGetAuthenticate@1
 
@@ -77,6 +77,35 @@ steps:
         --manifest output/build-manifest.json
     displayName: Build AL apps
 ```
+
+## Symbol-package publication
+
+Keep publishing separate from compilation. A build job can prepare packages without feed
+credentials, then upload the `.nupkg` files as pipeline artifacts:
+
+```bash
+alwasp symbols create ./output/MyApp.app --output ./symbols
+alwasp symbols pack ./symbols/MyApp.symbols.app --output ./packages
+```
+
+In a protected release job, download those artifacts, install ALWasp, and push each package:
+
+```yaml
+      - name: Publish symbol packages
+        shell: pwsh
+        env:
+          ALWASP_PAT: ${{ secrets.AZURE_ARTIFACTS_PAT }}
+        run: |
+          foreach ($package in Get-ChildItem ./packages/*.nupkg) {
+            alwasp symbols push $package.FullName --source https://pkgs.dev.azure.com/org/_packaging/feed/nuget/v3/index.json --auth-mode noninteractive --api-key az --skip-duplicate
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+```
+
+Packing and pushing also require ALTool for symbol-only/runtime validation; pre-cache compatible
+tools with `alwasp tools update` when needed. `symbols publish` combines all three stages when
+one job owns the complete workflow. `build` never publishes implicitly. See
+[Symbol Packages](/docs/symbol-packages/) for dependency ID mappings, validation, and stage results.
 
 ## Change detection
 
