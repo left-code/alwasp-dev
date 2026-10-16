@@ -6,6 +6,30 @@ order: 10
 
 # Release Notes
 
+## 0.5.10 — 2026-10-16
+
+- ALWasp keeps its own state under `~/.alwasp/state/<name>-<hash>/`, keyed by the owning
+  folder's normalized full path. Artifact symbol caches, incremental restore metadata, default
+  compiler logs, and temporary app.json backups now live outside the repository.
+- Restore metadata tracks each package's `.app` file, so deleting or superseding a cached file
+  makes it eligible for download again. The shared package-cache lock stays in the packages
+  folder only while commands run; a leftover lock after an interrupted command is removed by
+  the next command on that folder.
+- Restore/build report the symbol source and folder. Artifact builds identify the version and
+  country and show the folder VS Code keeps using. Build/workspace build also report cached
+  Base Application and System versions alongside the app.json application version.
+- `artifacts prune` removes state for folders that no longer exist, retaining caches in use.
+  Structured results add `stateDirectoriesRemoved`.
+- Accounts without a user profile use private per-account temporary storage. ALWasp fails
+  with a diagnostic if it cannot establish safe storage; configure a user profile for such accounts.
+- **Migration:** old restore manifests are removed and old app.json backups recovered on the
+  next relevant run. Old `.alwasp-bc` folders can be deleted; CI should cache `~/.alwasp/state`
+  instead. Remove an older generated `workspace.logDirectory: ".alwasp/logs"` to use the new
+  default; explicit log paths remain honored. Plan and requested build-manifest defaults are unchanged.
+
+See [Build](/docs/build/#generated-paths-and-failure-diagnostics),
+[Restore](/docs/restore/#incremental-restore-manifest), and [CI/CD](/docs/ci-cd/).
+
 ## 0.5.9 — 2026-10-15
 
 - `symbols create` turns a compiled `.app` into a symbol-only app through ALTool without a

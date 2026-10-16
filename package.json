@@ -1,6 +1,6 @@
 {
   "name": "alwasp-docs-site",
-  "version": "0.5.9",
+  "version": "0.5.10",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
-    "astro": "^7.3.8",
+    "astro": "^7.4.0",
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {

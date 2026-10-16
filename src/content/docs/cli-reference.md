@@ -427,6 +427,10 @@ unused for a day, artifacts unused for `--older-than <days>` (positive, default 
 abandoned downloads older than a day. `--all` removes every completed artifact not in use;
 `--dry-run` reports without deleting. Artifacts used by another ALWasp process are retained.
 Non-dry runs also remove stale ALWasp temporary run directories older than a day.
+Prune also removes per-user state whose owning folder is gone. If its parent still exists,
+the state must have been unused for `--older-than` days; state whose parent is also gone can
+be removed immediately. Artifact caches locked by a running build are retained. Structured
+results list the removed owners in `stateDirectoriesRemoved`; `--dry-run` previews them.
 JSON/NDJSON and standard logging options are supported. Removal failures exit `1`.
 
 Automatic compatibility cleanup additionally removes Insider artifacts; see
@@ -484,7 +488,7 @@ Common `workspace build` options:
 - `--max-cpu-count <int>`
 - `--nowarn <code>`
 - `--ruleset <file>`
-- `--log-directory <dir>`
+- `--log-directory <dir>` — defaults to `~/.alwasp/state/<workspace-key>/logs`, outside the repository
 - `--diagnostics`
 - `--manifest [path]` — defaults to `.alwasp/build-manifest.json` when the path is omitted
 - `--clean` — remove prior ALWasp package cache, compiled output, compiler log, and

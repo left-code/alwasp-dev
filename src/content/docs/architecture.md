@@ -56,7 +56,7 @@ explicit-tool-path installations update in place.
 4. Create feed repositories
 5. Traverse dependencies breadth-first
 6. Resolve, download, and extract `.app` files
-7. Append restored package entries to `.alwasp-packages`
+7. Record restored packages and their `.app` filenames in the packages folder's per-user restore manifest
 
 Workspace restore aggregates dependencies across all workspace projects, emits implicit dependencies once, deduplicates by GUID/package ID, and skips dependencies whose GUID matches a workspace project.
 
@@ -65,7 +65,7 @@ Workspace restore aggregates dependencies across all workspace projects, emits i
 1. Load and validate `alwasp.json`
 2. Resolve target/profile names
 3. Validate paths and output locations
-4. Recover stale `app.json.alwasp.bak` files
+4. Recover stale app.json backups from per-user state or the legacy project-local location
 5. Resolve change detection through local git
 6. Plan project versions, internal dependency versions, Application Insights, resource exposure, and preprocessor symbol changes
 7. Run restore for selected projects

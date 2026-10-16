@@ -92,10 +92,23 @@ Duplicate feed URLs are removed by normalized URL key.
 ALWasp writes:
 
 ```text
-<packagesFolder>/.alwasp-packages
+~/.alwasp/state/<packages-key>/restore-manifest.txt
 ```
 
-The manifest stores one `packageId@version` per line. Exact matches are skipped on later runs, while newer versions remain eligible.
+The key contains the packages folder's name and a hash of its normalized full path, so different
+package folders have separate state. The manifest stores `packageId@version|file.app` entries.
+An exact match is skipped only while its `.app` file still exists in the package cache; deleted
+or superseded files are downloaded again. Newer versions remain eligible. A legacy
+`<packagesFolder>/.alwasp-packages` is removed on the next restore; its entries are not trusted,
+while existing packages are still detected in the cache.
+
+The package folder holds `.app` files between commands. Its shared `.alwasp.lock` remains in
+the cache while a command runs so all writers coordinate on the same lock, including other
+OS users and earlier ALWasp versions. After a killed command, the next command on that folder
+removes the leftover lock.
+
+Restore prints its symbol source and destination, for example
+`Symbols: NuGet feeds -> /repo/.alpackages`.
 
 ## Package overrides
 

@@ -211,7 +211,10 @@ Common fields:
 
 - `root`: workspace root path.
 - `maxCpuCount`: passed to `altool workspace compile`.
-- `logDirectory`: where `altool` logs are written.
+- `logDirectory`: where `altool` logs are written, relative to `alwasp.json`. When omitted,
+  logs use `~/.alwasp/state/<workspace-key>/logs`, outside the repository. `config init` no
+  longer writes this setting. Remove an older generated `.alwasp/logs` value to adopt the default;
+  explicit values continue to be honored.
 - `manifest`: default config-driven build manifest path.
 - `diagnostics`: parse and display individual compiler errors and analyzer warnings from logs
   (also enabled by `build --diagnostics`, alias `--diagnostic`). Summaries always include per-analyzer totals.

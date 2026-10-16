@@ -37,7 +37,7 @@ Config-driven `build` can temporarily patch selected projects before compilation
 | Application Insights | `applicationInsightsConnectionString` or `applicationInsightsKey` |
 | Preprocessor symbols | `preprocessorSymbols` |
 
-Before modifying, ALWasp backs up `app.json` to `app.json.alwasp.bak`. It restores the original file in a `finally` block even when the build fails. A stale backup from an interrupted run is recovered before future builds or version application.
+Before modifying, ALWasp backs up `app.json` to `~/.alwasp/state/<project-key>/app.json.bak`, outside the repository. It restores the original file even when the build fails. A stale backup from an interrupted run, including a legacy `app.json.alwasp.bak` next to the project file, is recovered before future builds or version application.
 
 Version-only changes are applied surgically: ALWasp replaces only the relevant top-level `version` and internal dependency `version` values. Unrelated content, comments, indentation, line endings, Unicode, and escaped characters remain unchanged. Internal dependencies are matched by app GUID; external packages are never modified.
 
@@ -171,11 +171,12 @@ and matching tools. Non-Microsoft dependencies still use NuGet, including feed/a
 options, `--latest`, and transitive dependencies. Microsoft dependencies are excluded from NuGet
 at every level, and workspace app IDs are skipped during dependency restore.
 
-Artifact builds use `.alwasp-bc/<packages-name>/<version>-<country>` next to the configured
-packages folder, which defaults to `.alpackages`. These caches isolate BC versions and countries
-from ordinary builds and from other package folders. They are not nested inside the packages
-folder because AL tooling searches its subdirectories. `--outfolder` still collects newly
-compiled apps.
+Artifact builds use `~/.alwasp/state/<packages-key>/bc/<version>-<country>`, outside the
+repository. The key is derived from the normalized full path of the configured packages folder,
+which defaults to `.alpackages`. These caches isolate BC versions and countries from ordinary
+builds and from other package folders. The VS Code AL extension keeps reading the ordinary
+packages folder; artifact builds print both locations and the artifact version/country.
+`--outfolder` still collects newly compiled apps.
 
 For workspace builds, `--clean` clears ALWasp artifacts from the ordinary package cache and its
 associated artifact caches, including other versions and countries. A cache in use by another
@@ -188,6 +189,13 @@ uses the ordinary NuGet restore and compiler-resolution behavior, with package f
 options, supported VS Code settings, or defaults.
 
 ## Generated paths and failure diagnostics
+
+Since 0.5.10, default compiler logs go to `~/.alwasp/state/<workspace-key>/logs`, outside the
+repository. Each state key contains the owning folder's name and a hash of its normalized full
+path. Explicit `workspace.logDirectory` and `--log-directory` values retain their meaning.
+`config init` no longer generates a log directory setting. If an older generated configuration
+contains `"logDirectory": ".alwasp/logs"`, remove that setting to use the new default, or keep
+it to continue writing logs there. Old `.alwasp-bc` caches can be deleted.
 
 Since 0.4.1, default plans and manifests use `.alwasp` instead of `.output`. Update CI artifact
 collection and scripts relying on the defaults. Explicit `--plan-file` and manifest paths still
@@ -241,13 +249,20 @@ coherent artifact's Microsoft symbols, compiler, and analyzers; partner dependen
 NuGet. `--bc-version` excludes `--bc-target next-minor|next-major`. A conflicting configured
 `workspace.bcVersion` major/minor fails validation.
 
-Artifact package caches use `.alwasp-bc/<packages-name>/<version>-<country>` next to the package
-folder. Missing artifacts or workspace-capable compilers fail instead of substituting another
+Artifact package caches use `~/.alwasp/state/<packages-key>/bc/<version>-<country>`, outside
+the repository. Missing artifacts or workspace-capable compilers fail instead of substituting another
 target. These options are rejected for a positional app.json build. Country lists are supported
 by compatibility validation, not build. Linux/macOS artifact tools use the matching OS binaries;
 workspace paths may use Windows backslashes across platforms.
 
 ## Effective configuration and rulesets
+
+Restore and build name the symbol source and folder, for example
+`Symbols: NuGet feeds -> /repo/.alpackages`. After restore, `build` and `workspace build` also
+print `Compiling against Business Central: Base Application ..., System ... (app.json application ...)`.
+This lists the Base Application and System symbol versions found in the package caches and
+the highest `application` version from the selected projects. If a symbol app has several cached
+versions, all are listed.
 
 Every `build` reports the effective settings and their source: `cli`, `config`, `profile`,
 `project`, `discovered`, `default`, `resolved`, or `notResolved`. The summary includes per-project

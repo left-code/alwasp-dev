@@ -152,6 +152,12 @@ the consuming build's changed-only version calculation and must resolve to the p
 
 ## Default output paths and diagnostics
 
+Since 0.5.10, compiler logs and artifact symbol caches use per-user state outside the repository.
+Pipelines that cached `.alwasp-bc` should cache `~/.alwasp/state` instead. Artifact cache keys
+depend on the full packages-folder path, so use a stable checkout path for reuse. Collect compiler
+logs from the reported paths, or set `workspace.logDirectory` / `--log-directory` explicitly.
+An older generated `workspace.logDirectory: ".alwasp/logs"` keeps writing there until removed.
+
 Since 0.4.1, plans default to `.alwasp/alwasp-plan.json` and `--manifest` without a path uses
 `.alwasp/build-manifest.json`. Update artifact upload paths when relying on these defaults.
 Explicit paths such as `output/build-manifest.json` in the examples above remain unchanged.

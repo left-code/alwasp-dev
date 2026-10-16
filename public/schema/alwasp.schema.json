@@ -201,7 +201,7 @@
         },
         "logDirectory": {
           "type": "string",
-          "description": "Directory where altool writes compiler log files. When set, ALWasp creates per-profile and per-group subfolders automatically (e.g. logs/appsource/group-1/). Relative to the alwasp.json directory."
+          "description": "Directory where altool writes compiler log files. When set, ALWasp creates per-profile and per-group subfolders automatically (e.g. logs/appsource/group-1/). Relative to the alwasp.json directory. When omitted, logs go to ~/.alwasp/state/<repository>/logs, outside the repository."
         },
         "manifest": {
           "type": "string",

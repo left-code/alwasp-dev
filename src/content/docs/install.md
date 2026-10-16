@@ -10,21 +10,21 @@ ALWasp is one .NET tool package, `left-code.AlWasp`, exposing the command `alwas
 restore, build, symbol-package creation/publication, static AL source analysis, XLIFF translation coverage validation, and structured
 JSON/NDJSON output. None of its commands requires a license.
 
-The documented release tag is `v0.5.9`. Once the corresponding package is available on NuGet.org,
+The documented release tag is `v0.5.10`. Once the corresponding package is available on NuGet.org,
 install or update using the commands below. ALWasp targets
 `net10.0`; install the .NET 10 SDK or runtime before installing or upgrading ALWasp.
 
 ## Global install
 
 ```bash
-dotnet tool install --global left-code.AlWasp --version 0.5.9
+dotnet tool install --global left-code.AlWasp --version 0.5.10
 alwasp --version
 ```
 
 Upgrade or uninstall the global tool with the same package ID:
 
 ```bash
-dotnet tool update --global left-code.AlWasp --version 0.5.9
+dotnet tool update --global left-code.AlWasp --version 0.5.10
 dotnet tool uninstall --global left-code.AlWasp
 ```
 
@@ -35,7 +35,7 @@ For CI and clean-machine validation, an explicit tool path keeps the installatio
 ### Windows PowerShell
 
 ```powershell
-$Version = "0.5.9"
+$Version = "0.5.10"
 $Tool = Join-Path $HOME ".alwasp-tools\alwasp"
 
 dotnet tool install left-code.AlWasp --version $Version --tool-path $Tool
@@ -48,7 +48,7 @@ dotnet tool uninstall left-code.AlWasp --tool-path $Tool
 ### Linux
 
 ```bash
-VERSION="0.5.9"
+VERSION="0.5.10"
 TOOL="$HOME/.alwasp-tools/alwasp"
 
 dotnet tool install left-code.AlWasp --version "$VERSION" --tool-path "$TOOL"
