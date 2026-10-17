@@ -133,11 +133,15 @@ Direct dependency-aware builds accept `--project <dir>` or recursive `--project-
 Root mode also accepts repeatable `--app <name|appId|relativePath>`, `--changed-since`, and
 `--include-dependents`. Required local dependencies compile but are not collected as selected
 outputs. Direct options exclude positional target/path, `--config`, `--profile`, and `--plan`;
-`--outfolder` sets output and `--out` is rejected. `build` has no `--workspace` option.
+`--outfolder` sets output and `--out` is rejected. Without `--outfolder`, the projects’ VS Code
+`al.compilationOptions.outFolder` / `al.packageOutputPath` wins, then `<base>/.output`
+(or `.output/<version>-<country>` for artifact builds). Settings folders are used as given;
+conflicting project folders fail before compilation. `build` has no `--workspace` option.
 
 Direct and configured modes accept `--bc-target current|next-minor|next-major`, `--bc-version`,
-and exactly one `--bc-country` (default `restore.country`, else `W1`). `current` retains NuGet
-symbols; pinned/Insider builds use one artifact's Microsoft symbols/compiler/analyzers.
+and exactly one `--bc-country` (default `restore.country`, else `W1`). An explicit `current` selects the latest
+released artifact; pinned/Insider builds also use one artifact’s Microsoft symbols/compiler/analyzers.
+Without a target or version, builds retain NuGet symbols/tools; country alone selects NuGet localization.
 These options are rejected for positional app.json builds. See [Build](/docs/build/).
 
 ## plan
@@ -177,22 +181,6 @@ Requires `alwasp.json`; options include `--config`, `--profile`, `--changed-sinc
 `--continue-on-error`, and feed/authentication options. Plan conflicts and stale-plan checks match
 build. Independent translation checks continue after build failure. Exit `0` requires no failed
 step. See [Verification with check](/docs/check/).
-
-## context search / object / usages / prepare
-
-```bash
-alwasp context search "sales release" --project ./App
-alwasp context object 'table "Sales Header"' --workspace Apps.code-workspace
-alwasp context usages 'codeunit "Release Sales Document"' --project ./App
-alwasp context prepare --task story.md --project-root ./src
-```
-
-Offline discovery over selected source and restored dependencies. All four accept `--project`,
-`--project-root`, or `--workspace`, alternatively `--config` / `--profile` / `--target`, plus
-`--packages-folder` and repeatable `--dependency-source-folder`. Direct and configured selection
-cannot be combined. Search/prepare accept `--max-candidates`; prepare also accepts `--max-depth`,
-`--max-objects`, and `--output` (default `.alwasp/context/`). Object/usages return `2` for ambiguity.
-See [Agent Context](/docs/context/) for bounds, schemas, diagnostics, and usage limitations.
 
 <a id="init"></a>
 
@@ -476,8 +464,8 @@ Supported VS Code AL settings are read per project; explicit CLI options win. Se
 
 Common `workspace build` options:
 
-- `--bc-target <current|next-minor|next-major>` — `current` uses NuGet symbols/tools;
-  Insider targets use artifacts; excludes `--bc-version`
+- `--bc-target <current|next-minor|next-major>` — `current` uses the latest released artifact;
+  Insider targets use Insider artifacts; excludes `--bc-version`. Without BC options, symbols/tools use NuGet
 - `--bc-version <version>` — exact four-part released build or latest match for a two-/three-part
   version; excludes `--bc-target`
 - `--bc-country <code>` — artifact country, default `W1`; country alone selects the latest

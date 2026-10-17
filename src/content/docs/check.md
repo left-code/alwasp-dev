@@ -43,6 +43,11 @@ translation checks still run after a build failure. The summary includes elapsed
 compatibility/translation app counts and IDs, and available failure artifacts. Workflow message
 totals exclude compiler diagnostics, which have their own counts.
 
+Compiler failures distinguish crashes, reported AL errors, and non-zero exits without AL errors.
+The diagnostic identifies the compiler, BC artifact or NuGet source, exit code, and host;
+a crash never triggers a retry with another compiler or BC version. See
+[Compiler failures](/docs/build/#compiler-failures).
+
 Compatibility uses explicit per-app baselines or the configured
 [`publishedSymbols` policy](/docs/configuration/#published-compatibility-baselines). Missing
 baselines do not exempt selected production apps: their current source is compiled and analyzed

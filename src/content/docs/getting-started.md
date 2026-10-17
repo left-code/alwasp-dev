@@ -41,15 +41,11 @@ alwasp  [--format text|json|ndjson] [--result-file <path>]
 ├── restore [appJsonPath]
 ├── build [targetOrPath]
 ├── check [targetOrProfile]                  configured verification gates
-├── context
-│   ├── search <query>
-│   ├── object <query>
-│   ├── usages <query>
-│   └── prepare --task <path>
-├── init
 ├── config
+│   ├── init
 │   └── validate
 ├── version
+│   ├── resolve [targetOrProfile]
 │   └── apply [targetOrProfile]
 ├── analyze [targetOrProfile]                static source analysis
 ├── compare <baseline.app> <current.app>

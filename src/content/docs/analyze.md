@@ -214,5 +214,4 @@ alwasp analyze --workspace Apps.code-workspace --changed-since origin/main
 Choose one of `--project`, recursive `--project-root`, or `--workspace`, or configured selection.
 Workspace mode includes only folders directly containing app.json, without recursion. It cannot
 be combined with config/profile/target selection. Workspace change detection requires one Git
-repository. For restored dependency inspection and agent evidence packages, use
-[Agent Context](/docs/context/).
+repository.

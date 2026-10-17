@@ -74,7 +74,7 @@ keep their existing behavior. See [CI/CD](/docs/ci-cd/#deterministic-ci-plans).
 `--clean` on `alwasp build` (single-project and config-driven) and `alwasp workspace build` removes
 the prior ALWasp package cache, compiled output, compiler log, and build-manifest artifacts before
 restoring and compiling. Files in custom output and log directories that ALWasp did not produce are
-left in place.
+left in place. Direct builds also preserve output from subset selections and folders chosen by VS Code settings, which may be shared with other projects or the AL extension.
 
 ```bash
 alwasp build --clean
@@ -133,6 +133,9 @@ alwasp build --out ./artifacts/MyApp.app
 alwasp build --codecop --appsourcecop --ptecop --uicop
 ```
 
+With neither `--out` nor `--outfolder`, output follows the project’s VS Code
+`al.compilationOptions.outFolder`, then `al.packageOutputPath`, otherwise the project folder.
+
 ALWasp resolves `app.json`, restores symbols, locates `alc` through `ALC_PATH`, the tool cache, or NuGet download, then invokes the compiler with mapped options.
 
 ## Workspace build
@@ -153,14 +156,15 @@ Choose Microsoft symbols and matching compiler/analyzers from a released or Insi
 
 ```bash
 alwasp workspace build --bc-country DE
+alwasp workspace build --bc-target current --bc-country DE
 alwasp workspace build --bc-target next-minor --bc-country DE
 alwasp workspace build --bc-target next-major
 alwasp workspace build --bc-version 27.5 --bc-country DE
 ```
 
 `--bc-target` accepts `current`, `next-minor`, or `next-major` and cannot be combined with `--bc-version`.
-`current` uses NuGet symbols and the ordinary compiler, without a BC artifact; with this target,
-`--bc-country` only selects localized NuGet packages.
+An explicit `current` selects the latest released artifact for the country. `next-minor` and
+`next-major` select Insider artifacts. Without any BC options, symbols and tools come from NuGet.
 A four-part version pins an exact released build; a two- or three-part version selects the latest
 matching build. A major version alone is rejected. Country codes are case-insensitive and default
 to `W1`. With country alone, ALWasp selects the latest released artifact in the highest
@@ -169,7 +173,10 @@ to `W1`. With country alone, ALWasp selects the latest released artifact in the 
 The verified artifact cache supplies a coherent application/platform pair, Microsoft symbols,
 and matching tools. Non-Microsoft dependencies still use NuGet, including feed/authentication
 options, `--latest`, and transitive dependencies. Microsoft dependencies are excluded from NuGet
-at every level, and workspace app IDs are skipped during dependency restore.
+at every level, and workspace app IDs are skipped during dependency restore. Only Microsoft
+packages required by selected apps and restored partner dependencies, transitively, plus
+`System` and `Application`, are staged. Previously staged artifact packages are removed first,
+reducing the packages the compiler must load.
 
 Artifact builds use `~/.alwasp/state/<packages-key>/bc/<version>-<country>`, outside the
 repository. The key is derived from the normalized full path of the configured packages folder,
@@ -184,7 +191,7 @@ ALWasp process is skipped with a warning. Unrelated files remain in place.
 
 The selected artifact must include `altool` with workspace compilation support. Otherwise the
 build fails instead of substituting another compiler. Explicit artifact selection does not use
-`AL_PATH` or `ALC_PATH` overrides. Omitting all three options, or selecting `--bc-target current`,
+`AL_PATH` or `ALC_PATH` overrides. Omitting all three options
 uses the ordinary NuGet restore and compiler-resolution behavior, with package folders from CLI
 options, supported VS Code settings, or defaults.
 
@@ -204,6 +211,23 @@ work, so pipelines can retain an old location by supplying it explicitly.
 Failed commands list available diagnostic logs and build manifests in a deduplicated
 `Failure artifacts` section. Interactive terminals can make these paths clickable; see
 [CLI output controls](/docs/cli-reference/#terminal-links-and-failure-artifacts).
+
+## Compiler failures
+
+Failed compiles in `build`, `workspace build`, and `check` distinguish:
+
+- `abnormalTermination`: the compiler crashed, for example exit 134 (`SIGABRT`) on Linux/macOS
+  or Windows NTSTATUS `0xE0434352`.
+- `compilationErrors`: compiler logs report AL errors, with an error count.
+- `noErrorsReported`: a non-zero compiler exit without AL errors in its logs.
+
+Diagnostics include the exact compiler path, Business Central artifact version/country (or the
+NuGet symbol source), raw exit code, and host. A crash is never retried with another compiler or
+BC version. Inspect the compiler console output for its stack trace.
+
+Config build manifests add `compilerFailure` to failed compile groups; workspace build result
+documents expose it too. Fields are `kind`, `exitCode`, `compiler`, `businessCentral`, `host`,
+and, when available, `exitCodeMeaning` and `errorCount`. Successful compiles omit it.
 
 ## Tool cache
 
@@ -236,22 +260,32 @@ selects apps whose own files changed and the dependencies needed to compile them
 `--include-dependents` to also build downstream apps. No selected changes succeeds without compilation.
 
 The pipeline shares configured build's restore, package-cache locking, temporary app.json edits
-and restoration, and per-project manifest records. Ordinary direct builds collect output in
-`<selection-root>/.output`; artifact builds default to `.output/<version>-<country>`.
-`--outfolder` overrides this relative to the current directory; `--out` is rejected.
+and restoration, and per-project manifest records. `--outfolder` sets output relative to the current directory.
+Without it, direct builds use the projects’ VS Code `al.compilationOptions.outFolder`, then
+`al.packageOutputPath`. Relative settings paths resolve from each project folder. The settings
+folder is used as given, including artifact builds. If selected projects resolve different folders,
+including a mixture of set and unset values, the build fails before compilation: align the
+settings or pass `--outfolder`.
+
+Without an output setting, direct builds collect output in `<selection-root>/.output`; artifact
+builds default to `.output/<version>-<country>`. `--out` is rejected.
 
 ## Business Central targets for build
 
 Direct and configured builds accept `--bc-target current|next-minor|next-major`, `--bc-version`,
-and exactly one `--bc-country` (CLI, then `restore.country`, then `W1`). `current` keeps NuGet
-Microsoft symbols and ordinary tool resolution. A pinned version or Insider target supplies one
+and exactly one `--bc-country` (CLI, then `restore.country`, then `W1`). An explicit `current`
+selects the latest released artifact for that country. Without `--bc-target` or `--bc-version`,
+Microsoft symbols and tools still come from NuGet; `--bc-country` alone selects localized NuGet
+packages. Country-only `workspace build` instead selects an artifact matching the workspace
+application version. A current, pinned, or Insider target supplies one
 coherent artifact's Microsoft symbols, compiler, and analyzers; partner dependencies still use
 NuGet. `--bc-version` excludes `--bc-target next-minor|next-major`. A conflicting configured
 `workspace.bcVersion` major/minor fails validation.
 
 Artifact package caches use `~/.alwasp/state/<packages-key>/bc/<version>-<country>`, outside
 the repository. Missing artifacts or workspace-capable compilers fail instead of substituting another
-target. These options are rejected for a positional app.json build. Country lists are supported
+target. An unavailable `current` artifact fails without falling back to NuGet or Insider builds.
+`validate compatibility --bc-target current` continues to use NuGet symbols. These options are rejected for a positional app.json build. Country lists are supported
 by compatibility validation, not build. Linux/macOS artifact tools use the matching OS binaries;
 workspace paths may use Windows backslashes across platforms.
 
@@ -275,8 +309,11 @@ Directory-mode builds discover a project ruleset first (`ruleset.json`, then `*.
 then `al.ruleSetPath` in project `.vscode/settings.json`, then an enclosing `.code-workspace`.
 Settings paths resolve relative to the project folder. An explicit empty project `al.ruleSetPath`
 disables the workspace setting; a configured path pointing to a missing file fails the command. Workspace
-discovery uses only the nearest ancestor level with a single workspace file whose `folders` list
-the project. Unrelated workspaces are ignored and farther workspaces do not supply fallback settings.
+discovery uses the nearest ancestor level whose workspace `folders` list the project. A workspace
+without AL settings does not make a neighboring workspace with AL settings ambiguous. Multiple
+workspaces contributing AL settings are not applied and produce an informational diagnostic;
+keep AL settings in one workspace. Unrelated workspaces are ignored and farther workspaces do
+not supply fallback settings.
 An explicit CLI ruleset wins. For `build` and `workspace build`, a bare or empty `--ruleset`
 is treated as omitted, allowing normal discovery (useful for empty pipeline variables).
 Diagnostics count only logs rewritten by the current compile group,

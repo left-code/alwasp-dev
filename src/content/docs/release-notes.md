@@ -6,6 +6,31 @@ order: 10
 
 # Release Notes
 
+## 0.6.0 — 2026-10-17
+
+- **Migration:** the `context search`, `object`, `usages`, and `prepare` commands,
+  `--dependency-source-folder`, and the context package schema are removed. Update agent scripts
+  before upgrading. [Source Analysis](/docs/analyze/) remains available for source/Git reports.
+- Direct and single-project builds now honor VS Code `al.compilationOptions.outFolder` /
+  `al.packageOutputPath` when output is not explicit. Settings folders are used unchanged, including
+  artifact builds. Direct projects with conflicting output folders fail before compilation;
+  align settings or supply `--outfolder`. Clean builds preserve shared settings-defined output.
+- Workspace discovery ignores neighboring files without AL settings. Multiple workspaces with
+  AL settings remain ambiguous and now produce a diagnostic instead of silently dropping settings.
+- An explicit `build` or `workspace build --bc-target current` now uses the latest released
+  artifact for the country, with matching symbols, compiler, and analyzers. Missing artifacts
+  fail without fallback. Omit target/version to keep the NuGet lane on `build`; country-only
+  `workspace build` still selects the artifact matching its application version. Compatibility
+  validation with `current` still uses NuGet.
+- Artifact builds stage only required Microsoft packages, including transitive dependencies of
+  restored partner packages, plus `System` and `Application`, reducing compiler load.
+- Failed compiles distinguish crashes, AL errors, and exits without reported AL errors, with
+  compiler path, BC version/country, exit code, and host. Config build groups and workspace results
+  add `compilerFailure`; crashes never retry against another compiler or BC version.
+
+See [Build](/docs/build/) and [context migration](/docs/context/). Earlier release entries below
+describe behavior at their release date.
+
 ## 0.5.10 — 2026-10-16
 
 - ALWasp keeps its own state under `~/.alwasp/state/<name>-<hash>/`, keyed by the owning
