@@ -112,16 +112,16 @@
     },
     "toolingConfig": {
       "type": "object",
-      "description": "Optional overrides for AL compiler tool paths. By default ALWasp downloads the tools automatically.",
+      "description": "Optional overrides for AL compiler tool paths, used by the commands that read alwasp.json (configured 'build', configured 'validate compatibility', and 'check'). Precedence without --bc-version: this setting, then the environment variable, then the AL tools NuGet package (downloaded automatically). With --bc-version the selected Business Central artifact always supplies the compiler and analyzers and these paths are not used. A path that does not exist fails the command; ALWasp never falls back to another compiler.",
       "additionalProperties": false,
       "properties": {
         "alcPath": {
           "type": "string",
-          "description": "Absolute or relative path to the 'alc' / 'alc.exe' single-project compiler binary. Overrides the ALC_PATH environment variable."
+          "description": "Absolute path, or path relative to the alwasp.json folder, to the 'alc' / 'alc.exe' compiler that configured 'validate compatibility' runs directly. Overrides the ALC_PATH environment variable."
         },
         "altoolPath": {
           "type": "string",
-          "description": "Absolute or relative path to the 'altool' / 'altool.exe' workspace compiler binary. Overrides the AL_PATH environment variable."
+          "description": "Absolute path, or path relative to the alwasp.json folder, to the 'altool' / 'altool.exe' workspace compiler of a configured 'build' ('altool workspace compile' starts the 'alc' beside it). Overrides the AL_PATH environment variable."
         }
       }
     },
