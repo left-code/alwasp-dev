@@ -232,7 +232,7 @@
         "isolateDependencyLevels": {
           "type": "boolean",
           "default": false,
-          "description": "When true, a project and its dependencies never share one 'altool workspace compile' invocation: build groups are split at topological dependency-level boundaries. Mutually independent projects in the same level still compile in parallel. Narrows concurrent read/write access to the shared package cache (defense-in-depth against intermittent AL1028 sharing violations) at the cost of one compiler invocation per dependency level. Applies to config-driven builds ('alwasp build') only — the low-level 'alwasp workspace build' command always compiles the whole workspace in a single invocation."
+          "description": "When true, a project and its dependencies never share one 'altool workspace compile' invocation: build groups are split at topological dependency-level boundaries. Mutually independent projects in the same level still compile in parallel. A parallel build (maxCpuCount other than 1) always splits this way, because it stages compiled outputs and moves them into the package cache only after each compile; this setting requests the split for a serial build too. Costs one compiler invocation per dependency level. Applies to config-driven builds ('alwasp build')."
         }
       }
     },
