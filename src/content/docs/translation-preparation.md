@@ -1,14 +1,22 @@
 ---
 title: Translation Preparation
-description: Prepare deterministic packages for external translators and validate returned XLIFF.
-order: 6.7
+description: Prepare translation packages for a translator or an agent, validate the returned XLIFF, and apply it to your apps.
+group: Guides
+order: 18
 ---
 
 # Translation Preparation
 
-ALWasp can package generated AL translation sources for a human or external translation service,
-then strictly validate the returned XLIFF. It does not translate text, connect to AI services, or
-require AI credentials.
+ALWasp can package generated AL translation sources for a human translator, an external
+translation service, or an AI agent. It then validates the returned XLIFF and applies it to your
+project files. ALWasp does not translate text, does not connect to AI services, and needs no AI
+credentials.
+
+```text
+translation prepare  ->  translator or agent edits the package  ->  translation validate  ->  translation apply
+```
+
+To let an AI agent do these steps, see [Translation Skill](/docs/translation-skill/).
 
 Build each app first with `TranslationFile` enabled in `app.json`, and include the target locale
 in `supportedLocales`. Preparation requires exactly one generated `Translations/*.g.xlf` per
@@ -47,8 +55,9 @@ JSON files use camelCase, readable Unicode, and `schemaVersion: "1.0"`; timestam
 machine-specific paths are excluded, making equivalent inputs produce deterministic output.
 A failed preparation leaves the previous valid package intact.
 
-Additive manifest fields record `terminologyVersion`, `terminologyCountry`, `requestedBcVersion`,
-`expectedBcVersion`, `fileStyle`, `glossarySha256`, and `sourceRevision` when available.
+The manifest also records `terminologyVersion`, `terminologyCountry`, `requestedBcVersion`,
+`expectedBcVersion`, `fileStyle`, `glossarySha256`, `sourceInputsSha256`, and `sourceRevision`
+when available.
 Git revision metadata records commit, branch (null for detached HEAD), and dirty state; source
 hashes remain authoritative for integrity. Work reasons also include `target-too-long` and `glossary`.
 
@@ -77,8 +86,9 @@ a case-insensitive exact locale match (`fr` does not match `fr-FR`). Missing, nu
 skip the app before generated XLIFF is required or terminology is requested. The optional context
 language is not subject to this filter.
 
-Apps with no units requiring translation are skipped before terminology lookup. Regeneration
-removes stale folders for apps that no longer need work. If all apps are skipped, preparation
+An app whose generated source language is the target language is skipped, because there is
+nothing to translate. Apps with no units requiring translation are skipped before terminology
+lookup. Regeneration removes the folders of apps that need no work. If all apps are skipped, preparation
 succeeds with an empty manifest project list and no app folders.
 
 ## Existing translations and context
@@ -108,14 +118,19 @@ alwasp translation prepare fr-FR \
   --bc-version 28.0
 ```
 
-By default, ALWasp selects the latest released artifact in each app's application major/minor
-line. Use `--bc-version` to pin a released version or prefix, or `--bc-target next-minor|next-major`
-for an Insider artifact. `--bc-country` overrides `restore.country` and otherwise defaults to
-`W1`. No terminology or an unavailable artifact produces a warning but does not fail preparation.
-Pin a concrete version when terminology output must be reproducible.
+| `--bc-version` | Terminology source |
+|---|---|
+| Not given | The latest released artifact of each app's `application` major.minor |
+| `current` | The latest released artifact for the country |
+| `next-minor`, `next-major` | The Insider artifact |
+| A version or version prefix | That released artifact |
 
-Microsoft terminology comes only from Base Application for the selected target locale. Large
-Base Application translation files are supported without the earlier 64 MiB whole-file limit.
+`--bc-country` has priority over `restore.country`; the default is `W1`. The resolved version is
+printed and recorded in the manifest as `terminologyVersion`. If there is no terminology, or the
+artifact is not available, preparation gives a warning and continues. Pin a version when the
+terminology output must be the same in each run.
+
+Microsoft terminology comes only from Base Application for the selected target locale.
 
 ## Dependency translation context
 
@@ -148,13 +163,6 @@ still available if Microsoft terminology lookup fails.
 
 Run restore first when dependency packages are missing. Preparation does not download third-party
 dependencies and continues with a notice when they are unavailable.
-
-## Updating automation from 0.4.0
-
-Update consumers of `.output/translation/<language>`, GUID directory names, and `target.xlf`.
-Read `directory` and `translationFile` from the package manifest instead of constructing paths.
-Ensure each app declares the requested target locale in `supportedLocales`, and keep edited or
-returned translations outside the generated package before rerunning preparation.
 
 ## Validate returned XLIFF
 
@@ -198,10 +206,58 @@ copy them to their manifest filenames in the package for this check before regen
 | `1` | Invalid command input or read failure |
 | `2` | Returned-XLIFF validation errors |
 
-Both commands support `--verbose`, `--quiet`, `--format`, and `--result-file`. Text output shows at
+All translation commands support `--verbose`, `--quiet`, `--format`, and `--result-file`. Text output shows at
 most ten validation findings, while structured output retains all findings. This workflow does not
 replace [`alwasp validate translations`](/docs/translations/), which remains the coverage and
 release-gating command across complete projects and language sets.
+
+## Apply returned translations
+
+`translation apply` writes the validated translations from a package into the target XLIFF files
+of your apps. It is the only translation command that changes project files.
+
+```bash
+alwasp translation apply .alwasp/translation/fr-FR --project-root . --dry-run
+alwasp translation apply .alwasp/translation/fr-FR --project-root .
+```
+
+Use the same project selection as for `prepare`. `--dry-run` reports the units and files that
+would change and writes nothing.
+
+Only units with the status `needs-translation` and one of these reasons are applied:
+
+| Reason | Meaning |
+|---|---|
+| `missing-unit` | A new unit that is not in the target file |
+| `missing-target` | A unit without a target |
+| `untranslated` | An empty target, an untranslated state, or a marker such as `%EMPTY%` |
+| `source-changed` | The source text or markup changed after the translation was written |
+
+All other units stay as they are. Units with review, placeholder, inline-code, length, or
+glossary findings are listed for manual review and keep their text.
+
+Safety rules:
+
+- Apps are matched by app ID. A package app that is not found, or found more than one time, blocks
+  the run.
+- A package is stale when the generated `.g.xlf`, an `.al` file, `app.json`, or the target file
+  changed after `prepare`. A stale package is refused; run `translation prepare` again.
+- The scope is calculated again from the packaged source and target. An edited `units.json` that
+  does not agree blocks the run.
+- The package is validated again. An error on a unit to apply, a unit that is returned with a
+  review flag, a file-level error, or a change to a unit outside the scope blocks the run.
+- Only the applied `<trans-unit>` elements are changed. All other bytes, the BOM, the line
+  endings, and the unit sequence stay the same.
+- Nothing is written unless all apps of the package can be applied.
+
+| Exit code | Meaning |
+|---|---|
+| `0` | Applied, or nothing to apply |
+| `1` | Invalid input |
+| `2` | Blocked, also for a stale package |
+
+The structured result lists for each app the file, the applied unit IDs with their reason, the
+number of preserved units, the manual-review units, the obsolete units, and the findings.
 
 ## Approved glossary and consistency review
 

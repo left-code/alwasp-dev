@@ -1,5 +1,6 @@
 ---
 import GitHubIcon from "@components/GitHubIcon.astro";
+import { documentedVersion } from "../lib/docs";
 
 const groups = [
   {
@@ -17,7 +18,7 @@ const groups = [
       ["Restore symbols", "/docs/restore/"],
       ["Build projects", "/docs/build/"],
       ["Compatibility", "/docs/compatibility/"],
-      ["Source analysis", "/docs/analyze/"],
+      ["CI/CD", "/docs/ci-cd/"],
       ["Translation coverage", "/docs/translations/"]
     ]
   },
@@ -27,8 +28,9 @@ const groups = [
       ["CLI reference", "/docs/cli-reference/"],
       ["Visual CLI reference", "/alwasp-cli-reference.html"],
       ["Cheatsheet", "/cheatsheet/"],
-      ["CI/CD", "/docs/ci-cd/"],
-      ["Release notes", "/docs/release-notes/"]
+      ["Troubleshooting", "/docs/troubleshooting/"],
+      ["Release notes", "/docs/release-notes/"],
+      ["License", "/docs/license/"]
     ]
   }
 ];
@@ -48,6 +50,7 @@ const groups = [
       <a href="https://github.com/left-code/alwasp-dev" target="_blank" rel="noreferrer" class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-ink-700 transition hover:text-ink-900">
         <GitHubIcon class="h-4 w-4" /> Docs &amp; feedback on GitHub
       </a>
+      <a href="https://github.com/left-code/alwasp-dev/issues/new/choose" target="_blank" rel="noreferrer" class="mt-2 block text-sm font-semibold text-ink-700 transition hover:text-ink-900">Report a problem or request a feature</a>
     </div>
     <div class="grid grid-cols-2 gap-8 sm:grid-cols-3">
       {groups.map((group) => (
@@ -64,8 +67,8 @@ const groups = [
   </div>
   <div class="border-t border-ink-200 bg-ink-50">
     <div class="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-4 text-xs text-ink-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-      <span>ALWasp documentation · v0.5.10</span>
-      <span>ALWasp is free to use; its documentation is open source.</span>
+      <span>ALWasp documentation · v{documentedVersion}</span>
+      <span>ALWasp is free to use under its <a href="/docs/license/" class="underline hover:text-mint-700">license agreement</a>. This documentation is open source.</span>
     </div>
   </div>
 </footer>

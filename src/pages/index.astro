@@ -2,11 +2,11 @@
 import BaseLayout from "@layouts/BaseLayout.astro";
 import CardLink from "@components/CardLink.astro";
 import GitHubIcon from "@components/GitHubIcon.astro";
-import { getCollection } from "astro:content";
+import { getSortedDocs } from "../lib/docs";
 
-const docs = (await getCollection("docs")).sort((a, b) => a.data.order - b.data.order);
-const learn = docs.filter((doc) => doc.data.order <= 5);
-const reference = docs.filter((doc) => doc.data.order > 5);
+const docs = await getSortedDocs();
+const learn = docs.filter((doc) => doc.data.group === "Start" || doc.data.group === "Guides");
+const reference = docs.filter((doc) => doc.data.group === "Reference");
 
 const capabilities = [
   {
@@ -65,7 +65,7 @@ const capabilities = [
             <span class="flex items-center gap-2"><span class="text-mint-500">✓</span> CI-ready outputs</span>
           </div>
           <p class="mt-5 text-sm text-ink-200">
-            One package includes source-impact analysis, translation coverage gates, and machine-readable automation on every command — no license required.
+            One package includes all commands: source-impact analysis, translation coverage gates, and machine-readable output. ALWasp is free to use under its <a href="/docs/license/" class="underline hover:text-white">license agreement</a>. No license key is necessary.
           </p>
         </div>
 
@@ -141,7 +141,7 @@ const capabilities = [
         <div class="mb-7 max-w-2xl">
           <p class="text-xs font-bold uppercase tracking-[0.18em] text-wasp-700">Operate and extend</p>
           <h2 class="mt-2 text-3xl font-semibold tracking-tight text-ink-900 sm:text-4xl">Reference for real pipelines.</h2>
-          <p class="mt-3 text-base leading-7 text-ink-700">Authentication, commands, internals, and automation when you need exact behavior.</p>
+          <p class="mt-3 text-base leading-7 text-ink-700">Commands, version selection, output formats, exit codes, and problem solutions. <a href="/docs/" class="font-semibold text-mint-700 underline">See all pages</a>.</p>
         </div>
         <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {reference.map((doc) => (

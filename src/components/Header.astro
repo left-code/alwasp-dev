@@ -5,9 +5,10 @@ const pathname = Astro.url.pathname;
 const nav = [
   { href: "/", label: "Home", active: pathname === "/" },
   { href: "/docs/getting-started/", label: "Getting started", active: pathname === "/docs/getting-started/" },
-  { href: "/docs/configuration/", label: "Docs", active: pathname.startsWith("/docs/") && pathname !== "/docs/getting-started/" },
+  { href: "/docs/", label: "Docs", active: pathname.startsWith("/docs/") && pathname !== "/docs/getting-started/" },
   { href: "/examples/", label: "Examples", active: pathname.startsWith("/examples/") },
-  { href: "/cheatsheet/", label: "Cheatsheet", active: pathname.startsWith("/cheatsheet/") }
+  { href: "/cheatsheet/", label: "Cheatsheet", active: pathname.startsWith("/cheatsheet/") },
+  { href: "/search/", label: "Search", active: pathname.startsWith("/search/") }
 ];
 ---
 

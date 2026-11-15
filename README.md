@@ -33,14 +33,15 @@ Prerequisites:
 ```bash
 npm ci          # install dependencies
 npm run dev     # local dev server
-npm run build   # production build to ./dist
+npm run build   # production build to ./dist, then the Pagefind search index
 npm run preview # preview the production build
 ```
 
 | Path | Contents |
 |---|---|
-| `src/content/docs/` | Documentation pages (Markdown content collection) |
-| `src/pages/` | Site pages (home, examples, docs routes) |
+| `src/content/docs/` | Documentation pages (Markdown content collection). Front matter: `title`, `description`, `group` (`Start`, `Guides`, `Reference`, `Project`), `order` |
+| `src/lib/docs.ts` | Sidebar groups, page order, and the documented version (read from `package.json`) |
+| `src/pages/` | Site pages (home, documentation index, search, examples, cheatsheet, 404) |
 | `public/schema/alwasp.schema.json` | Published config JSON Schema |
 | `public/CNAME` | GitHub Pages custom domain (`alwasp.dev`) |
 
@@ -50,7 +51,8 @@ ALWasp tool; it is kept in sync on each tool release.
 ## Release synchronization
 
 The version in `package.json` and `package-lock.json` is the ALWasp tool version documented by this
-site, not an independently versioned npm release. This repository is marked `private` and must not
+site, not an independently versioned npm release. The footer, the cheatsheet, and the documentation
+index read this version; do not type a version into a page. This repository is marked `private` and must not
 be published to npm.
 
 For every ALWasp release:
@@ -95,7 +97,7 @@ For appearance changes, edit `scripts/cli-reference/template.html` and run
 `npm run generate:cli-reference`. Do not edit the generated HTML directly.
 `npm run check:cli-reference` validates that the page is current and its snapshot version
 matches `package.json`; `npm run build` runs this check automatically.
-\n## License
+## License
 
 The documentation website source and other contents of this repository are licensed under the
 [MIT License](./LICENSE). This license does not apply to the ALWasp tool itself.

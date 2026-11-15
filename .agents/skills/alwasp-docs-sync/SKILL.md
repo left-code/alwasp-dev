@@ -88,17 +88,39 @@ Update existing pages where possible.
 
 Typical mappings include:
 
-- CLI commands/options → `cli-reference.md`
+- CLI commands/options → `cli-reference.md` (syntax and primary options only; the generated visual
+  reference has the complete option lists)
+- `--bc-version` / `--bc-country`, artifacts, compiler selection, `toolchain` → `bc-version.md`
 - build behavior → `build.md`
 - restore behavior → `restore.md`
 - compatibility validation → `compatibility.md`
+- unified verification → `check.md`
 - configuration → `configuration.md`
 - CI behavior → `ci-cd.md`
 - analysis → `analyze.md`
 - translations → `translations.md`
-- translation package preparation → `translation-preparation.md`
+- translation package preparation, validation, and apply → `translation-preparation.md`
+- agent skills → `translation-skill.md`
+- symbol packages / app packages → `symbol-packages.md` / `app-packages.md`
+- result documents, NDJSON records, `--result-file` → `structured-output.md`
+- exit codes, environment variables, written files and folders → `reference.md`
+- known failure cases and their solutions → `troubleshooting.md`
 - installation/runtime requirements → `install.md`
+- license text (`LICENSE.txt` of the tool) → `license.md`
 - significant release changes → `release-notes.md`
+
+Writing rules for the guide and reference pages:
+
+- Describe only the current behavior. Do not write "since 0.x", "now", "no longer", or
+  "retains its existing behavior" in a guide. Put history and migration steps in `release-notes.md`.
+- State each rule in one page and link to it from the others. Business Central version rules
+  belong in `bc-version.md`; plan rules in `build.md`.
+- Put result field names in tables, not in running text.
+- Do not name internal classes, assemblies, or source files of the product.
+- Do not type a version number into a page or component. The site reads the documented version
+  from `package.json` (`src/lib/docs.ts`).
+- Each page needs `group` (`Start`, `Guides`, `Reference`, `Project`) and `order` in its front matter.
+- Quote a front matter `description` that contains a colon.
 
 Create a new page only when the feature represents a distinct user workflow that does not fit an existing page.
 

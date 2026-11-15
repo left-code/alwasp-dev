@@ -1,12 +1,13 @@
 ---
 title: Source Analysis
 description: alwasp analyze — dependency and object graphs, changed objects, public API, and impacted tests from source and git alone.
-order: 6.5
+group: Guides
+order: 16
 ---
 
 # Source Analysis
 
-It answers "what did this change actually touch, and what has to be rebuilt, reviewed, or
+`alwasp analyze` answers "what did this change actually touch, and what has to be rebuilt, reviewed, or
 re-tested because of it?" — from `.al` source and git alone. It never invokes a compiler,
 restores symbols, or reaches the network, so it runs in seconds on a fresh checkout and returns
 the same answer every time for the same input.

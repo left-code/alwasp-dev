@@ -117,3 +117,46 @@
     @apply hidden;
   }
 }
+
+@layer components {
+  .code-block {
+    @apply relative;
+  }
+
+  .code-block .copy-code {
+    @apply absolute right-2 top-2 rounded-md border border-white/15 bg-white/10 px-2 py-1 text-[11px] font-semibold text-ink-200 opacity-0 transition;
+  }
+
+  .code-block:hover .copy-code,
+  .code-block .copy-code:focus-visible {
+    @apply opacity-100;
+  }
+
+  .code-block .copy-code:hover {
+    @apply bg-white/20 text-white;
+  }
+}
+
+@layer components {
+  /* Keep words whole in table cells; long code values can still wrap. */
+  .prose-docs th,
+  .prose-docs td {
+    overflow-wrap: break-word;
+  }
+
+  .prose-docs td code,
+  .prose-docs th code {
+    overflow-wrap: anywhere;
+  }
+
+  .doc-article .prose-docs > h1:first-child + h2 {
+    @apply mt-0 border-t-0 pt-0;
+  }
+}
+
+@media (max-width: 767px) {
+  .prose-docs table {
+    display: block;
+    overflow-x: auto;
+  }
+}

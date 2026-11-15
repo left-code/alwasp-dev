@@ -1,16 +1,109 @@
 ---
 title: Release Notes
 description: User-facing changes in ALWasp releases.
-order: 10
+group: Project
+order: 40
 ---
 
 # Release Notes
+
+Entries marked **Migration** or **Behavior change** can require a change in your scripts. Each
+entry describes the behavior at its release date; the guides describe the current behavior.
+
+## 0.8.0 — 2026-11-15
+
+- **Behavior change:** `validate compatibility` without `--bc-version`, and `check`, compile each
+  app against the Microsoft symbols of the lowest release that it can be installed on, as AppSource
+  does. Before, newer Microsoft packages in `.alpackages` could hide a call to an API that is not
+  public in the declared release (`AL0161`). An app whose dependencies need a newer release than
+  its `application`/`platform` is validated at that release and reported as a warning, with a
+  table at the end of the run and `understatedMinimums` in the result data. An app's own Microsoft
+  dependency of a later major.minor than its `application` is an error.
+- **Behavior change:** `check` always runs the compatibility step for the selected apps with a
+  baseline, also for apps that a `compatibility.enabled` profile checked during the build. Those
+  apps are compiled two times in a `check` run.
+- The `validate compatibility` summary and the `check` overview list why each app failed: the
+  Microsoft symbols and the first five errors. The result data has `failureReasons`.
+- `validate compatibility --bc-version minimum` names the minimum-release validation, so that one
+  run can cover `minimum,current,next-minor`.
+- `--project` mode of `validate compatibility` works on a temporary copy of the packages folder and
+  does not change `.alpackages`.
+
+See [Minimum supported release](/docs/compatibility/#minimum-supported-release).
+
+## 0.7.0 — 2026-11-12
+
+- `alwasp app pack`, `push`, and `publish` put a compiled, deployable `.app` on a NuGet feed as
+  `{Publisher}.{Name}.{AppId}`. See [App Packages](/docs/app-packages/).
+- The `alwasp-translate` skill accepts all target languages. It asks for inputs that are not given,
+  and its build step compiles only the target apps and the local apps that they need. Run
+  `alwasp skills install alwasp-translate` again to update an installed skill.
+- `translation prepare <language>` skips an app whose generated source language is `<language>`.
+- Parallel builds on Linux and WSL no longer fail at random with `AL1023`. When more than one
+  project can compile at the same time, each finished app is moved into the package cache only when
+  it is complete, and the build runs one compiler call for each dependency level.
+  `--max-cpu-count 1` keeps one serial compiler call.
+- The build summary shows compile groups with the same settings as one line.
+
+## 0.6.5 — 2026-11-05
+
+- `alwasp skills install <skill> [--user] [--check] [--force]` installs the agent skills that are
+  in the tool package. See [Translation Skill](/docs/translation-skill/).
+
+## 0.6.4 — 2026-10-25
+
+- The `alwasp-translate` agent skill for Codex and Claude Code translates only new, missing,
+  untranslated, and source-changed units.
+- `alwasp translation apply <package> [--dry-run]` writes validated translations from a package
+  into the target XLIFF files. See
+  [Apply returned translations](/docs/translation-preparation/#apply-returned-translations).
+- **Behavior change:** `translation prepare --bc-version current` uses the latest released
+  artifact for the country. Without `--bc-version`, it uses each app's `application` major.minor
+  as before.
+
+## 0.6.3 — 2026-10-23
+
+- One compiler selection rule for `build`, `workspace build`, `validate compatibility`, and
+  `check`: an artifact supplies its own compiler; without `--bc-version` the sequence is
+  `tooling.*`, `ALC_PATH`/`AL_PATH`, NuGet. An explicit path that does not exist fails. See
+  [AL compiler selection](/docs/bc-version/#al-compiler-selection).
+- `tooling.alcPath` and `tooling.altoolPath` in `alwasp.json` are now applied. Before, the schema
+  accepted them but they had no effect.
+- **Behavior change:** `validate compatibility --bc-version current` validates against the latest
+  released artifact. Without `--bc-version`, it uses NuGet symbols.
+- **Behavior change:** `workspace build --bc-country <code>` without `--bc-version` no longer
+  selects an artifact. It selects the country of the NuGet symbol packages, as `build` does.
+- Results report the compiler that ran as `toolchain`.
+- The compiler binary is selected by operating system, CPU, and .NET version. A binary that cannot
+  start on the computer is not used.
+
+## 0.6.2 — 2026-10-20
+
+- `artifacts download` and `validate compatibility` with a pinned released `--bc-version` no longer
+  fail with `404`. All commands look for a pinned version in the released artifacts first and use
+  Insider artifacts only for an exact build that is not released.
+
+## 0.6.1 — 2026-10-18
+
+- `--bc-version` is the one Business Central selector on `build`, `workspace build`,
+  `validate compatibility`, `artifacts download`, `artifacts resolve`, and `translation prepare`.
+  It accepts `current`, `next-minor`, `next-major`, or a version. See
+  [Business Central Versions](/docs/bc-version/).
+- **Migration:** `--bc-target` is a deprecated alias of `--bc-version` and reports a warning.
+  A command with the two options fails. Replace `--bc-target` in your scripts.
+- `validate compatibility --bc-version` accepts a comma-separated list that can mix names and
+  builds.
+- Config-driven build: a project in more than one profile of a target is compiled in each profile
+  with that profile's `versioning`, `applicationInsights`, `resourceExposurePolicy`, and `defines`.
+  Before, it got the changes of the first profile in all profiles. The build manifest adds
+  `profiles[].projects[]`.
 
 ## 0.6.0 — 2026-10-17
 
 - **Migration:** the `context search`, `object`, `usages`, and `prepare` commands,
   `--dependency-source-folder`, and the context package schema are removed. Update agent scripts
-  before upgrading. [Source Analysis](/docs/analyze/) remains available for source/Git reports.
+  before upgrading. [Source Analysis](/docs/analyze/) remains available for source/Git reports. It does not replace
+  the removed inspection of restored symbols or the context package preparation.
 - Direct and single-project builds now honor VS Code `al.compilationOptions.outFolder` /
   `al.packageOutputPath` when output is not explicit. Settings folders are used unchanged, including
   artifact builds. Direct projects with conflicting output folders fail before compilation;
@@ -28,8 +121,7 @@ order: 10
   compiler path, BC version/country, exit code, and host. Config build groups and workspace results
   add `compilerFailure`; crashes never retry against another compiler or BC version.
 
-See [Build](/docs/build/) and [context migration](/docs/context/). Earlier release entries below
-describe behavior at their release date.
+See [Build](/docs/build/).
 
 ## 0.5.10 — 2026-10-16
 
@@ -52,7 +144,7 @@ describe behavior at their release date.
   instead. Remove an older generated `workspace.logDirectory: ".alwasp/logs"` to use the new
   default; explicit log paths remain honored. Plan and requested build-manifest defaults are unchanged.
 
-See [Build](/docs/build/#generated-paths-and-failure-diagnostics),
+See [Build](/docs/build/#compiler-logs),
 [Restore](/docs/restore/#incremental-restore-manifest), and [CI/CD](/docs/ci-cd/).
 
 ## 0.5.9 — 2026-10-15
@@ -73,7 +165,7 @@ See [Build](/docs/build/#generated-paths-and-failure-diagnostics),
   existing consumer configuration does not need migration.
 
 See [Symbol Packages](/docs/symbol-packages/), [Authentication](/docs/authentication/), and
-[CI/CD](/docs/ci-cd/#symbol-package-publication).
+[CI/CD](/docs/ci-cd/#package-publication).
 
 ## 0.5.8 — 2026-10-13
 
@@ -166,7 +258,7 @@ See [Build](/docs/build/) and [Compatibility](/docs/compatibility/).
 All four context commands accept repeatable `--dependency-source-folder`. Exact restored symbols
 remain authoritative; matching local dependency source adds verified implementation members,
 objects, and provenance. Mismatches/ambiguity produce `ALWCTX007`–`ALWCTX012`. Source-enriched
-packages use schema 1.1; symbol-only packages retain 1.0. See [Agent Context](/docs/context/).
+packages use schema 1.1; symbol-only packages retain 1.0. 
 
 ## 0.5.3 — 2026-10-05
 
@@ -191,7 +283,7 @@ and relative `--app` filters. Analysis/compatibility change detection requires o
 - [`alwasp check`](/docs/check/) runs configured verification gates over one deterministic
   target/profile, changed-only, or validated-plan selection. Independent translation gates
   continue after build failure. Test apps are reported as compiled, never executed.
-- [`context search`, `object`, `usages`, and `prepare`](/docs/context/) provide offline local AL
+- `context search`, `object`, `usages`, and `prepare` (removed in 0.6.0) provide offline local AL
   and restored-symbol evidence. Preparation writes a bounded agent package in `.alwasp/context/`
   without changing source or calling an AI service.
 - Configured compatibility and check support top-level `compatibility.baseline.source:
@@ -221,7 +313,7 @@ and relative `--app` filters. Analysis/compatibility change detection requires o
 released version with `--bc-version`, plus a localization with `--bc-country`. Microsoft symbols,
 compiler, and analyzers come from the same artifact; partner dependencies still use NuGet.
 Artifact package caches are isolated by version and country. Workspace `--clean` also clears
-other associated package caches, skipping those in use. See [Build](/docs/build/#business-central-artifact-selection).
+other associated package caches, skipping those in use. See [Build](/docs/bc-version/).
 
 ### Terminal diagnostics
 
@@ -425,7 +517,7 @@ profiles keep their normal analyzer settings. See
 
 - Config-driven build manifests classify each profile's `artifactType` (`apps`, `tests`, or
   `mixed`), so CI pipelines can distinguish application and test output profiles without relying
-  on profile names. See [Build](/docs/build/#manifests).
+  on profile names. See [Build](/docs/build/#build-manifest).
 - `validate compatibility` now temporarily applies the effective build-time `applicationInsights`
   setting before invoking AppSourceCop and restores `app.json` afterward, preventing false
   `AS0092` warnings when the connection string or instrumentation key is intentionally injected

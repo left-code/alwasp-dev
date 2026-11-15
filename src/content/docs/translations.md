@@ -1,12 +1,13 @@
 ---
 title: Translation Coverage
 description: alwasp validate translations — XLIFF coverage checking, placeholder validation, and release gating.
-order: 6.6
+group: Guides
+order: 17
 ---
 
 # Translation Coverage
 
-It answers the pre-release question "is everything translated?" by comparing each project's
+`alwasp validate translations` answers the pre-release question "is everything translated?" by comparing each project's
 generated `Translations/<App>.g.xlf` against the language files beside it. No compiler, symbol
 restore, or Business Central environment is involved — it only reads XLIFF files.
 
@@ -22,7 +23,7 @@ alwasp validate translations --project-root ./src --json output/translations.jso
 A non-empty `--languages` / `translations.languages` list is both the required set and the
 *scope* of the check: translation files for languages outside that list are excluded from
 validation entirely rather than being checked and potentially failing on their own account.
-Leaving the list empty or omitted checks every discovered language, as before.
+Leaving the list empty or omitted checks every discovered language.
 
 | Finding | Meaning |
 |---|---|

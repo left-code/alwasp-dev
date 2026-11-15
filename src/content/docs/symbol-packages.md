@@ -1,15 +1,19 @@
 ---
 title: Symbol Packages
 description: Create symbol-only AL apps, pack NuGet dependencies, and explicitly publish to a feed or folder.
-order: 3.5
+group: Guides
+order: 14
 ---
 
 # Symbol Packages
 
-Since 0.5.9, the `symbols` commands produce the packages that [Restore](/docs/restore/)
+The `symbols` commands produce the packages that [Restore](/docs/restore/)
 consumes. They transform compiled apps into symbol-only apps, wrap them in NuGet packages,
 and publish them to a feed or local folder. No Business Central container, server, or BC
 credentials are required. These commands do not deploy apps into Business Central.
+
+To put the full, deployable `.app` on a feed, use [App Packages](/docs/app-packages/). The two
+package types have different IDs and can be on the same feed.
 
 ```text
 compiled .app -> symbols create -> symbol-only .app -> symbols pack -> .nupkg
@@ -40,7 +44,7 @@ ALWasp invokes ALTool's `CreateSymbolPackage`, then verifies that the output pre
 input's app ID, publisher, name, and version. ALTool resolves through `AL_PATH`, then the
 cached/downloaded `Microsoft.Dynamics.BusinessCentral.Development.Tools` package. If the
 required operation is unavailable, run `alwasp tools update` or point `AL_PATH` to a newer
-ALTool. See [Tool acquisition](/docs/architecture/#tool-acquisition).
+ALTool. See [AL compiler selection](/docs/bc-version/#al-compiler-selection).
 
 ## Symbol package validation
 
@@ -105,7 +109,7 @@ ends in an app GUID, that GUID must match the contained app. Ordinary NuGet pack
   options, applied only to the push source. `ALWASP_PAT` remains the PAT fallback.
 - An HTTP source requires `allowInsecureConnections="true"` on its `nuget.config` entry.
 
-See [Authentication](/docs/authentication/#symbol-package-publication) for write credentials
+See [Authentication](/docs/authentication/#package-publication) for write credentials
 and CI behavior. Publication can require authentication even when consumers read anonymously.
 
 ## Publish in one command
@@ -129,10 +133,9 @@ Publication stops at the first failing stage and exits `1`, recording `failedSta
 alwasp restore --feed ./local-feed
 ```
 
-Add the source with `--feed` or `nuget.config`. The generated IDs follow the existing restore
-convention, and package dependencies are followed transitively. Existing restore and NuGet
-version-source behavior is unchanged. The AL Language extension can also use the feed through
+Add the source with `--feed` or `nuget.config`. The generated IDs follow the restore
+convention, and package dependencies are followed transitively. The AL Language extension can also use the feed through
 `al.nugetFeeds`; ALWasp recognizes that VS Code setting but does not apply it automatically.
 
 For separating package preparation from a protected publication job, see
-[CI/CD](/docs/ci-cd/#symbol-package-publication).
+[CI/CD](/docs/ci-cd/#package-publication).

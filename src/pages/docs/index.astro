@@ -1,0 +1,41 @@
+---
+import BaseLayout from "@layouts/BaseLayout.astro";
+import CardLink from "@components/CardLink.astro";
+import { getSortedDocs, groupDocs, documentedVersion } from "../../lib/docs";
+
+const groups = groupDocs(await getSortedDocs());
+---
+
+<BaseLayout title="Documentation" description="All ALWasp documentation pages: start, guides, reference, release notes, and license.">
+  <main>
+    <section class="border-b border-ink-900 bg-ink-900 text-white">
+      <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+        <nav class="flex items-center gap-2 text-xs font-semibold text-ink-500" aria-label="Breadcrumb">
+          <a href="/" class="hover:text-white">Home</a><span aria-hidden="true">/</span><span class="text-wasp-300">Documentation</span>
+        </nav>
+        <h1 class="mt-5 text-4xl font-semibold tracking-tight sm:text-5xl">Documentation</h1>
+        <p class="mt-4 max-w-2xl text-lg leading-8 text-ink-200">This documentation describes ALWasp {documentedVersion}. Each guide covers one task. The reference pages give exact options and data.</p>
+        <div class="mt-6 flex flex-wrap gap-3">
+          <a href="/docs/getting-started/" class="rounded-md bg-wasp-300 px-5 py-3 text-sm font-bold text-ink-900 transition hover:bg-wasp-100">Get started</a>
+          <a href="/search/" class="rounded-md border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10">Search the documentation</a>
+        </div>
+      </div>
+    </section>
+
+    <div class="mx-auto max-w-7xl space-y-12 px-4 py-12 sm:px-6 lg:px-8" data-pagefind-ignore>
+      {groups.map((group) => (
+        <section>
+          <div class="mb-5 max-w-2xl">
+            <h2 class="text-2xl font-semibold tracking-tight text-ink-900">{group.title}</h2>
+            <p class="mt-1 text-sm leading-6 text-ink-700">{group.intro}</p>
+          </div>
+          <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {group.docs.map((doc) => (
+              <CardLink href={`/docs/${doc.id}/`} title={doc.data.title} description={doc.data.description} label="Open" />
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  </main>
+</BaseLayout>
