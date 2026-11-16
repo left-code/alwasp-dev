@@ -1,7 +1,8 @@
 ---
 title: Authentication
 description: Configure public and private NuGet feeds with PATs, feed-token environment mappings, nuget.config, and credential providers.
-order: 6
+group: Guides
+order: 21
 ---
 
 # Authentication
@@ -71,9 +72,9 @@ For each source:
 2. Existing credentials from config/provider state
 3. PAT fallback
 
-## Symbol-package publication
+## Package publication
 
-`symbols push` and `symbols publish` use the same credential precedence and auth modes for
+`symbols push`, `symbols publish`, `app push`, and `app publish` use the same credential precedence and auth modes for
 their single required `--source`. The source can be a NuGet v3 URL, a `nuget.config` source
 name, or a local folder. Interactive authentication is refused in CI.
 
@@ -90,4 +91,5 @@ alwasp symbols publish ./output/MyApp.app \
 Set `ALWASP_PAT` in the publication job's secret environment, rather than embedding it in the
 command. Push errors and NuGet log lines redact effective PATs, mapped tokens, API keys, and
 stored source passwords. Credentials are needed for writing; a feed may still allow anonymous
-restore. See [Symbol Packages](/docs/symbol-packages/) for validation and output behavior.
+restore. See [Symbol Packages](/docs/symbol-packages/) and [App Packages](/docs/app-packages/)
+for validation and output behavior.

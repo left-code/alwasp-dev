@@ -1,12 +1,14 @@
 ---
 title: Configuration
 description: Understand alwasp.json inventories, profiles, targets, restore settings, transformations, and schema validation.
-order: 2
+group: Start
+order: 3
 ---
 
 # Configuration
 
-Config-driven builds use `alwasp.json` at the repository root. The JSON Schema is published at `https://alwasp.dev/schema/alwasp.schema.json`.
+Config-driven commands read `alwasp.json` from the current folder, or from the path that you pass
+with `--config`. Put the file at the repository root. The JSON Schema is published at `https://alwasp.dev/schema/alwasp.schema.json`.
 
 ```json
 {
@@ -132,12 +134,17 @@ Compiler settings applied to every profile unless overridden:
 
 ## `tooling`
 
-Optional overrides for AL compiler tool paths — by default ALWasp downloads tools automatically:
+Optional paths to the AL compiler. By default ALWasp downloads the compiler automatically.
 
-| Field | Purpose |
-|---|---|
-| `alcPath` | Path to `alc` / `alc.exe`, overrides `ALC_PATH` |
-| `altoolPath` | Path to `altool` / `altool.exe`, overrides `AL_PATH` |
+| Field | Purpose | Used by |
+|---|---|---|
+| `alcPath` | Path to `alc` / `alc.exe`. Has priority over `ALC_PATH` | Configured `validate compatibility` |
+| `altoolPath` | Path to `altool` / `altool.exe`. Has priority over `AL_PATH` | Configured `build`, also through `check` |
+
+The paths are relative to the `alwasp.json` folder. A path that does not exist fails the command.
+The paths are not used when `--bc-version` selects an artifact, and not by the modes that use
+`--project`, `--project-root`, or `workspace build`. See
+[AL compiler selection](/docs/bc-version/#al-compiler-selection).
 
 ## Profile fields beyond `include`
 
@@ -179,7 +186,7 @@ How values combine:
 - ALWasp writes the resolved symbols into each project's `app.json` `preprocessorSymbols`.
 - The original `app.json` is restored after the build.
 - Symbols already present in `app.json` are preserved and unioned with configured symbols.
-- A project included by more than one selected profile resolves its symbols once; the first including profile wins.
+- A project in more than one selected profile is compiled in each profile with the symbols of that profile.
 
 This avoids passing a workspace-wide `/define` value to `altool`. Projects that differ only by `defines` can stay in the same compile group, which reduces the number of compiler invocations.
 
@@ -212,13 +219,13 @@ Common fields:
 - `root`: workspace root path.
 - `maxCpuCount`: passed to `altool workspace compile`.
 - `logDirectory`: where `altool` logs are written, relative to `alwasp.json`. When omitted,
-  logs use `~/.alwasp/state/<workspace-key>/logs`, outside the repository. `config init` no
-  longer writes this setting. Remove an older generated `.alwasp/logs` value to adopt the default;
-  explicit values continue to be honored.
+  logs use `~/.alwasp/state/<workspace-key>/logs`, outside the repository.
 - `manifest`: default config-driven build manifest path.
 - `diagnostics`: parse and display individual compiler errors and analyzer warnings from logs
   (also enabled by `build --diagnostics`, alias `--diagnostic`). Summaries always include per-analyzer totals.
 - `continueOnError`: continue with later groups/profiles after a failed group.
+- `isolateDependencyLevels`: for a serial build (`maxCpuCount: 1`), compile one dependency level
+  for each compiler call. A parallel build always does this. Default `false`.
 - `bcVersion`: fallback Business Central version for Application Insights `auto` mode.
 - `sourceUrl` / `sourceCommit`: optional manifest metadata.
 
@@ -240,7 +247,7 @@ Key choices:
 
 Set it at the top level for all profiles, or override individual fields per profile.
 
-Internal dependencies are matched by app GUID, so similarly named external packages are never changed. During `build`, dependency versions are temporary and the original `app.json` files are restored. During `version apply`, both the calculated project version and eligible internal dependency versions are written permanently.
+Internal dependencies are matched by app GUID, so similarly named external packages are never changed. In a build, dependency versions are pinned for each profile from the projects of that profile and of its `needsProfile` profiles. During `build`, these changes are temporary and the original `app.json` files are restored. During `version apply`, both the calculated project version and eligible internal dependency versions are written permanently.
 
 `version resolve` previews the same current/next versions and dependency changes. Both version
 commands also support direct `--project` / `--project-root` selection without configuration.
@@ -264,7 +271,7 @@ The resulting version uses the target year and month as its major and minor comp
 
 For example, in August 2026 the 15th is a Saturday, so the closest Friday is August 14. A `Release` calculation on August 13 still targets July; on August 14 it targets August. A `Preview` calculation switches from August to September on the same date.
 
-The former `Hotfix` release type has been removed. Repeated `Release` calculations within the active release period already increment the build component and cover that workflow.
+For a hotfix, run a `Release` calculation again in the active release period. It increments the build component.
 
 ### `resourceExposurePolicy`
 
@@ -276,7 +283,7 @@ Supported fields:
 - `allowDownloadingSource`
 - `includeSourceInSymbolFile`
 
-Unset fields are left untouched, and the original `app.json` is restored after build. The removed `showMyCode` and `enableDebugging` config fields are not supported.
+Unset fields are left untouched, and the original `app.json` is restored after build.
 
 ### `applicationInsights`
 
@@ -393,12 +400,12 @@ Lookup respects target/profile, changed-only, and plan selections and excludes t
 
 Apps without a published baseline are restored, compiled, and analyzed without AppSourceCop;
 compatibility is N/A while compile/analyzer errors still fail the gate. This top-level policy
-does not opt ordinary builds into published baseline lookup. Profile-bound build validation
-continues to use explicit per-app baselines.
+does not apply to ordinary builds. Profile-bound build validation uses only explicit per-app
+baselines.
 
 ## Inventory classification
 
-`init --include-tests` includes source-classified tests; plain `init` omits them. Test codeunits
+`config init --include-tests` includes source-classified tests; plain `config init` omits them. Test codeunits
 determine classification rather than names. Unknown source enters generated `apps` with warnings
 and needs review. Explicit valid `apps`/`tests` entries override later discovery inference.
 Configuration validation rejects duplicate app manifest GUIDs across both lists, as well as
@@ -407,7 +414,7 @@ duplicate configured IDs and physical paths.
 ## VS Code AL settings
 
 Low-level `workspace restore` and `workspace build` read supported AL settings from the selected
-workspace and project settings files. See [Workspace settings](/docs/build/#vs-code-al-settings-for-workspace-builds)
+workspace and project settings files. See [Workspace settings](/docs/build/#vs-code-al-settings)
 for cache paths, analyzers, rulesets, parallelism, output folders, and precedence, and
 [Workspace restore caches](/docs/restore/#workspace-vs-code-package-caches). Configured builds
 keep their `alwasp.json` settings. Directory builds discover VS Code rulesets when no explicit

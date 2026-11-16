@@ -1,140 +1,115 @@
 ---
-title: Architecture
-description: High-level architecture for restore, build, configuration, versioning, change detection, and compiler tool acquisition.
-order: 8
+title: How ALWasp Works
+description: "What each command does in sequence: restore, config-driven build, version commands, compatibility, source analysis, and translation checks."
+group: Reference
+order: 36
 ---
 
-# Architecture
+# How ALWasp Works
 
-ALWasp is a CLI orchestration layer over dependency discovery, NuGet feed resolution, incremental restore, compiler tool acquisition, and build runners.
+ALWasp is one command-line program. It reads your AL projects, gets symbols from NuGet feeds or
+Business Central artifacts, starts Microsoft's AL compiler, and reports the result. It has no
+server part, and it does not connect to a Business Central environment.
 
-```text
-Program.cs
-├── RestoreOrchestrator
-├── AlcRunner
-├── WorkspaceRunner
-├── ConfigBuildProjectPlanner
-├── AppJsonTransformer
-├── AppVersionResolver / AppVersionCalculator
-├── InternalDependencyVersionPlanner
-├── ApplicationInsightsResolver
-├── ChangeDetectionResolver / GitChangeDetector
-├── ConfigBuildManifestWriter
-├── AlcToolsProvider
-├── Compatibility/AppPackageReader / CompatibilityComparer
-├── Compatibility/AppSourceCopConfiguration
-├── Compatibility/CompatibilityWorkspaceDiscovery
-├── AppPackageIdRewriter
-├── PackageOverrideApplier
-├── AnalysisEngine
-└── TranslationCoverageValidator
-```
-
-## Product composition
-
-Starting with `0.2.1`, ALWasp ships as one package and one command surface. The separate Pro host
-and its licensing layer were retired; every command is registered unconditionally by the
-`left-code.AlWasp` package.
-
-| Assembly | Role |
+| ALWasp connects to | Purpose |
 |---|---|
-| `AlWasp.Core` | CLI-independent restore, build, versioning, and compatibility implementation |
-| `AlWasp.Cli` | Command composition contracts and shared command modules |
-| `AlWasp.Analysis` | `alwasp analyze` static source analysis |
-| `AlWasp.Translations` | XLIFF coverage validation plus external translation preparation and return validation |
-| `AlWasp.Automation` | Universal `--format json/ndjson` and `--result-file` output |
-| `AlWasp` | The packable host (`left-code.AlWasp`) that registers every module |
+| NuGet feeds | Read symbol packages; write packages only with `symbols push`/`publish` and `app push`/`publish` |
+| NuGet.org | Download the AL compiler tools |
+| Microsoft's Business Central artifact storage | Download artifacts when you use `--bc-version` |
+| Your local Git repository | Read tags, refs, and diffs for change detection. ALWasp does not fetch, commit, tag, or push |
 
-The package ID and `alwasp` command did not change from earlier releases, so existing global and
-explicit-tool-path installations update in place.
+## Restore
 
-## Restore pipeline
+1. Read `app.json`.
+2. Collect the explicit dependencies and add the implicit Microsoft dependencies.
+3. Make the feed list: `--feed` entries, built-in public feeds, `nuget.config` feeds.
+4. Resolve each dependency, then the dependencies of each package, level by level.
+5. Download the packages and put the `.app` files in the packages folder.
+6. Record what was restored, so that the next restore downloads only what is new.
 
-1. Read `app.json`
-2. Parse target Business Central major
-3. Build dependency queue from explicit and implicit dependencies
-4. Create feed repositories
-5. Traverse dependencies breadth-first
-6. Resolve, download, and extract `.app` files
-7. Record restored packages and their `.app` filenames in the packages folder's per-user restore manifest
+`workspace restore` does this one time for all projects of the workspace. It removes duplicates
+and does not restore a dependency that is a project of the workspace.
 
-Workspace restore aggregates dependencies across all workspace projects, emits implicit dependencies once, deduplicates by GUID/package ID, and skips dependencies whose GUID matches a workspace project.
+See [Restore](/docs/restore/).
 
-## Config-driven build pipeline
+## Config-driven build
 
-1. Load and validate `alwasp.json`
-2. Resolve target/profile names
-3. Validate paths and output locations
-4. Recover stale app.json backups from per-user state or the legacy project-local location
-5. Resolve change detection through local git
-6. Plan project versions, internal dependency versions, Application Insights, resource exposure, and preprocessor symbol changes
-7. Run restore for selected projects
-8. Apply configured package overrides by embedded AppId
-9. Temporarily patch required `app.json` files
-10. Compile grouped temporary workspaces
-11. Restore original `app.json` files
-12. Write manifest and print summary
+1. Load and validate `alwasp.json`.
+2. Resolve the target or profile, or read the plan.
+3. Restore `app.json` files that an interrupted run left changed.
+4. Find changed projects from Git, when change detection is active.
+5. Plan, for each profile and project: version, dependency versions, Application Insights,
+   resource exposure, and preprocessor symbols.
+6. Restore symbols for the selected projects and apply package overrides.
+7. For each profile: change the `app.json` files, compile the groups in dependency order, and move
+   the compiled apps to the output folder.
+8. Restore the original `app.json` files. This is also done after a failure.
+9. Write the manifest and print the summary.
+
+See [Build](/docs/build/).
 
 <a id="version-apply-pipeline"></a>
 
 ## Version commands
 
-`alwasp version apply` shares the same selection, validation, change detection, project-version, and internal-dependency planning code as config-driven build. It permanently writes the calculated top-level `version` and eligible internal `dependencies[].version` values to `app.json`; it does not restore, compile, or touch git.
+`version resolve` and `version apply` use the same selection, change detection, and version
+calculation as the build. `resolve` only reports. `apply` writes the calculated `version` and the
+versions of dependencies on selected projects into `app.json` permanently. Only these values are
+replaced; all other text in the file stays the same. The commands do not restore, compile, or use
+Git to write.
 
-`version resolve` previews the same calculation. Both version commands accept direct project/root
-selection without configuration and calculate each project's version from its own current version.
-Direct changed-only selection excludes dependents unless `--include-dependents` is supplied.
+See [Configuration](/docs/configuration/#versioning).
 
-`InternalDependencyVersionPlanner` matches selected projects by app GUID and controls propagation through `dependencyUpdateScope`. External dependencies are excluded. The transformer performs targeted text replacements so version application preserves unrelated JSON text exactly.
+## Compatibility
 
-Release-period planning switches on the Friday closest to the 15th of each month. Before the switch, `Release` targets the previous month and `Preview` the current month; from the switch onward, they target the current and next month respectively. `Hotfix` is no longer a supported release type.
+`alwasp compare` reads two compiled packages and lists the differences in their public symbols.
+It does not start the compiler.
 
-## Compatibility pipelines
+`alwasp validate compatibility` compiles your current source:
 
-`alwasp compare` reads the NAVX ZIP payload, normalizes public symbols from `SymbolReference.json`, compares baseline/current models, and writes a console or JSON report. It never invokes the compiler.
+1. Select the apps and find their baselines by app ID.
+2. For each app, in dependency order, prepare a separate package cache with the symbols of the
+   selected Business Central version, or of the app's minimum supported release.
+3. Compile with AppSourceCop against the baseline. An app without a baseline is compiled with the
+   other analyzers.
+4. Keep the compiled app available for the apps that depend on it.
+5. Print the verdict for each app, the reasons for failures, and the summary.
 
-`alwasp validate compatibility` prepares an isolated current package cache and a historical AppSourceCop baseline cache, temporarily overlays `AppSourceCop.json`, and invokes `alc`. Multi-app directory mode discovers projects and packages by app ID, calculates the required local dependency closure, and validates in topological order.
+Your `AppSourceCop.json` and `app.json` files are restored to their original bytes afterwards.
 
-## Source analysis pipeline
+See [Compatibility](/docs/compatibility/).
 
-`AnalysisEngine` reads `.al` source through a tokenizer and git alone — it never invokes a
-compiler or restores symbols. For each selected project it parses every file at the head
-revision (and, when change detection is active, the base revision too) into declared objects,
-then extracts references only from forms that can only mean a reference — a declared type, an
-object-id expression, an `[EventSubscriber]` binding, or a property whose value names an object.
-Changed files are compared object by object rather than whole-file, so identity (kind + name,
-case-insensitive) rather than declared object number drives what counts as `Added`, `Removed`,
-`Modified`, or merely `Moved`. Impact then propagates forward along the resulting object graph —
-from a changed object to everything that references it — to produce the affected-apps,
-impacted-tests, and public-API sections. See [Source Analysis](/docs/analyze/) for the full
-section list, object identity rules, and the versioned report contract.
+## Source analysis
 
-## Translation validation pipeline
+`alwasp analyze` reads `.al` files and Git only. It parses the declared objects and the references
+between them, compares changed files object by object, and follows the references from each
+changed object to the apps and test codeunits that it reaches. Equal input gives equal output.
 
-`TranslationCoverageValidator` reads only XLIFF files — no compiler, symbol restore, or Business
-Central environment. For each selected project it parses the generated `Translations/<App>.g.xlf`
-into a baseline of translatable units (excluding `translate="no"` and source-less units), then
-compares every configured language file against that baseline by unit id, checking presence,
-non-empty state, and (with `<source>` compared exactly apart from line endings) whether the
-translation has gone stale since the caption was last reworded. See
-[Translation Coverage](/docs/translations/) for finding types and configuration.
+See [Source Analysis](/docs/analyze/).
 
-## Tool acquisition
+## Translation checks
 
-`AlcToolsProvider` resolves compiler tools in this order:
+`alwasp validate translations` reads only XLIFF files. For each project it compares the generated
+`.g.xlf` with each language file by unit ID and reports units that are missing, not translated,
+or out of date.
 
-1. Environment override: `ALC_PATH` for `alc`, `AL_PATH` for `altool`
-2. Cache under `~/.alwasp/tools/<version>/`
-3. Download `Microsoft.Dynamics.BusinessCentral.Development.Tools` from NuGet.org
+See [Translation Coverage](/docs/translations/).
 
-On Unix-like systems, extracted binaries are marked executable.
+<a id="tool-acquisition"></a>
 
-`alwasp tools update` uses the same provider to check, download, and optionally clean cached compiler versions.
+## Compiler
 
-## App package ID rewrite
+ALWasp does not contain the AL compiler. It uses the compiler of a Business Central artifact, a
+path that you configure, or the AL tools package from NuGet.org. See
+[AL compiler selection](/docs/bc-version/#al-compiler-selection).
 
-`alwasp app set-package-id` rewrites only the deployment package ID stored in the NAVX header of a compiled `.app` file. The ZIP payload and the app identity inside `app.json` remain unchanged.
+## Secrets
 
-## Secret safety
+Feed credentials, tokens, API keys, and Application Insights values are secrets. ALWasp removes
+them from logs, error messages, manifests, and structured output. For Application Insights, only
+the fact that a value was applied and the property name are recorded.
 
-Application Insights values are treated as secrets. ALWasp records only presence flags and property names in logs and manifests, never the connection string or instrumentation key.
+## Files
+
+See [Files and folders](/docs/reference/#files-and-folders) for all locations that ALWasp writes
+to.

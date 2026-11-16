@@ -1,32 +1,41 @@
 ---
 title: Restore
-description: Symbol restore behavior, dependency traversal, NuGet feed order, locked/latest resolution, and incremental manifests.
-order: 3
+description: "How ALWasp finds and downloads AL symbol packages: sources, dependency discovery, feed order, version selection, and overrides."
+group: Guides
+order: 10
 ---
 
 # Restore
 
 ALWasp restores AL symbol packages from NuGet feeds for a single project, a `.code-workspace`, or the selected projects in a config-driven build.
 
-When `workspace build` selects an explicit `--bc-target`, `--bc-version`, or `--bc-country` alone, its
-Microsoft symbols come from the selected Business Central artifact instead. Partner dependencies
-continue through NuGet, including transitive dependencies and the existing feed/authentication
-options. Microsoft dependencies are excluded from that NuGet traversal. See
-[Workspace artifact selection](/docs/build/#business-central-artifact-selection) for the isolated
-package caches. Standalone `workspace restore` retains its existing NuGet behavior.
-An explicit `--bc-target current` on `build` or `workspace build` uses the latest released artifact
-for the country. With no target or version, `build` keeps NuGet symbols, including country-only
-builds; `workspace build` keeps NuGet only when all BC options are omitted. Artifact builds stage
-only required Microsoft dependencies, transitively including those of partner packages, plus
-`System` and `Application`, removing previously staged artifact packages first.
-
 ```bash
-alwasp restore
+alwasp restore                                   # app.json in the current folder
 alwasp restore path/to/app.json
 alwasp workspace restore ./project.code-workspace
 ```
 
-For localized Microsoft symbols, set `restore.country` in `alwasp.json`:
+`build`, `workspace build`, and `check` restore automatically before they compile. Run `restore`
+separately when you only want the symbols, for example for the VS Code AL extension.
+
+## Where Microsoft symbols come from
+
+| Command | Microsoft symbols | Partner dependencies |
+|---|---|---|
+| `restore`, `workspace restore` | NuGet feeds | NuGet feeds |
+| `build` / `workspace build` without `--bc-version` | NuGet feeds | NuGet feeds |
+| `build` / `workspace build` with `--bc-version` | The selected Business Central artifact | NuGet feeds |
+
+With an artifact, Microsoft dependencies are not looked up on NuGet, and the symbols go to a
+package cache outside the repository. See [Business Central Versions](/docs/bc-version/).
+
+Each restore prints its source and destination, for example
+`Symbols: NuGet feeds -> /repo/.alpackages`.
+
+## Localized symbols
+
+For localized Microsoft symbols, set `restore.country` in `alwasp.json`, or pass `--bc-country`
+to a build:
 
 ```json
 {
@@ -65,7 +74,6 @@ When a dependency has no package ID, ALWasp generates:
 Publisher and name keep only `[A-Za-z0-9_]`, and the app GUID is lowercase. The producer
 command `alwasp symbols pack` uses the same convention, so its packages can be resolved
 directly. See [Symbol Packages](/docs/symbol-packages/) to create and publish a feed's packages.
-Existing restore IDs and NuGet-based version lookup are unchanged in 0.5.9.
 
 It also tries canonical package ID variants, including inserted `.symbols.`, Microsoft application canonicalization, `Microsoft.Platform.symbols`, and a fallback GUID search across feeds.
 
@@ -101,17 +109,11 @@ ALWasp writes:
 The key contains the packages folder's name and a hash of its normalized full path, so different
 package folders have separate state. The manifest stores `packageId@version|file.app` entries.
 An exact match is skipped only while its `.app` file still exists in the package cache; deleted
-or superseded files are downloaded again. Newer versions remain eligible. A legacy
-`<packagesFolder>/.alwasp-packages` is removed on the next restore; its entries are not trusted,
-while existing packages are still detected in the cache.
+or superseded files are downloaded again. Newer versions remain eligible.
 
-The package folder holds `.app` files between commands. Its shared `.alwasp.lock` remains in
-the cache while a command runs so all writers coordinate on the same lock, including other
-OS users and earlier ALWasp versions. After a killed command, the next command on that folder
-removes the leftover lock.
-
-Restore prints its symbol source and destination, for example
-`Symbols: NuGet feeds -> /repo/.alpackages`.
+The packages folder contains only `.app` files. While a command runs, it also contains
+`.alwasp.lock`, which makes all commands that write to the same folder wait for each other. If a
+command was stopped by force, the next command on that folder removes the lock that stayed.
 
 ## Package overrides
 
@@ -158,18 +160,17 @@ The same feed, auth, country, and override settings can be supplied through `alw
 
 ## Credential-safe feed output
 
-Restore masks embedded URL credentials and secret query parameters in NuGet feed log/error lines.
-Use the existing authentication options for private feeds; build effective-configuration reports
-apply the same protection to reported credentials and connection strings.
+Restore hides credentials in URLs and secret query parameters in NuGet feed log and error lines.
+See [Authentication](/docs/authentication/) for private feeds.
 
 ## Workspace VS Code package caches
 
-Since 0.5.7, `workspace restore` reads `al.packageCachePath` from project
+`workspace restore` reads `al.packageCachePath` from project
 `.vscode/settings.json`, then the selected `.code-workspace` settings. `--packages` overrides
 these settings. A value can be a string or array, and relative paths resolve against each project
 folder. Cache entries are combined in project order; restore writes only the first cache and
 warns that additional entries are not used. Without an effective entry, the default remains
-`.alpackages` beside the workspace file.
+`.alpackages` adjacent to the workspace file.
 
 `workspace restore` does not apply compiler or output-folder settings. It recognizes
 `al.nugetFeeds` and `al.symbolsCountryRegion` without applying them; use CLI or ALWasp

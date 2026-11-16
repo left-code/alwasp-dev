@@ -1,516 +1,453 @@
 ---
 title: CLI Reference
-description: Reference for root commands, arguments, common options, validation behavior, and examples.
-order: 7
+description: All ALWasp commands with their arguments and primary options, with links to the complete option lists and the guides.
+group: Reference
+order: 30
 ---
 
 # CLI Reference
 
-## Global
+This page gives the syntax and the primary options of each command. The
+[visual CLI reference](/alwasp-cli-reference.html) contains the complete, generated help text of
+each command. `alwasp <command> --help` prints the same text.
 
-```bash
-alwasp --help
-alwasp --version
+## Command tree
+
+```text
+alwasp
+├── restore [appJsonPath]
+├── build [targetOrPath]
+├── plan [targetOrProfile] --changed-since <ref>
+├── check [targetOrProfile]
+├── config
+│   ├── init
+│   └── validate
+├── version
+│   ├── resolve [targetOrProfile]
+│   └── apply [targetOrProfile]
+├── analyze [targetOrProfile]
+├── compare <baseline> <current>
+├── validate
+│   ├── compatibility [targetOrProfile]
+│   └── translations [targetOrProfile]
+├── translation
+│   ├── prepare <language>
+│   ├── validate <path>
+│   └── apply <package>
+├── artifacts
+│   ├── resolve
+│   ├── download
+│   └── prune
+├── symbols
+│   ├── create <app>
+│   ├── pack <symbolApp>
+│   ├── push <package>
+│   └── publish <app>
+├── app
+│   ├── set-package-id <appPath>
+│   ├── pack <app>
+│   ├── push <package>
+│   └── publish <app>
+├── skills
+│   └── install <skill>
+├── tools
+│   └── update
+└── workspace
+    ├── restore [workspacePath]
+    └── build [workspacePath]
 ```
 
-Every command also accepts:
+## Options that many commands share
 
-- `--format <text|json|ndjson>` — `text` (default) is unchanged human output; `json` prints one
-  result document to stdout with human output moved to stderr; `ndjson` (alias `jsonl`) streams
-  one JSON record per line as the command runs
-- `--result-file <path>` — writes the json/ndjson output to a file and leaves the console in
-  plain-text mode; required for `build`/`check`/`workspace build`, whose `altool` output cannot itself be
-  redirected
+### All commands
 
-```bash
-alwasp restore --format json | jq '.data.packagesFolder'
-alwasp build release --format ndjson --result-file .alwasp/build-result.ndjson
-jq -r 'select(.type=="event") | .event' .alwasp/build-result.ndjson
-alwasp build release --format json --result-file .output/build-result.json
-```
+| Option | Effect |
+|---|---|
+| `--format <text\|json\|ndjson>` | Output format. See [Structured Output](/docs/structured-output/) |
+| `--result-file <path>` | Write the JSON or NDJSON output to a file |
+| `-v`, `--verbose` | More log output |
+| `-q`, `--quiet` | Minimal output |
+| `-h`, `--help` | Show the help text |
 
-The exit code and default text output are unchanged by `--format`; the result document just makes
-them explainable. `compare --json` and config-driven build manifests are separate,
-command-specific JSON outputs.
+`alwasp --version` prints the tool version.
 
-### Terminal links and failure artifacts
+### Feeds and authentication
 
-Interactive human output can show clickable file/directory paths and public URLs. Set
-`ALWASP_HYPERLINKS=auto|always|never` to control links; the default is `auto`. `never` disables
-links, while `always` also enables them for an interactive terminal reporting `TERM=dumb`.
-Even with `always`, redirected streams and CI output remain plain. JSON/NDJSON records and result
-files never contain terminal link escape sequences; any separate human console stream follows
-its own terminal capabilities.
+Accepted by `restore`, `build`, `check`, `validate compatibility`, `version`, and the `workspace`
+commands. See [Authentication](/docs/authentication/).
 
-Failed commands show a deduplicated `Failure artifacts` section when diagnostic logs, build
-manifests, or translation coverage reports are available. This is human output only; it does not
-add fields or records to structured results. Successful commands and failures without available
-artifacts do not show the section.
+| Option | Effect |
+|---|---|
+| `--feed <url>` | Add a NuGet feed. Repeatable |
+| `--nuget-config <path>` | The `nuget.config` for sources and credentials |
+| `--auth-mode <Auto\|Interactive\|NonInteractive>` | How to authenticate on private feeds |
+| `--feed-token-env <feedUrl=ENV_VAR>` | Take the token of a feed from an environment variable. Repeatable |
+| `--pat <token>` | Personal access token. Default: `ALWASP_PAT` |
 
-## restore
+### Project selection
 
-```bash
-alwasp restore [appJsonPath]
-```
+| Option | Selects | Needs `alwasp.json` |
+|---|---|---|
+| `[targetOrProfile]`, `--profile <name>`, `--config <path>` | The projects of a configured target or profile | Yes |
+| `--project <dir>` | One project folder | No |
+| `--project-root <dir>` | All projects below a folder | No |
+| `--workspace <file>` | The folders of a `.code-workspace` file that contain `app.json` directly | No |
+| `--app <name\|appId\|path>` | Specified apps in `--project-root` or `--workspace` mode. Repeatable | No |
+| `--changed-since <ref>` | Projects that changed after a Git reference | No |
+| `--include-dependents` | With `--changed-since`: also the apps that depend on a changed app | No |
 
-Common options:
+The selection modes cannot be combined. Each command accepts only the modes in its help text.
 
-- `--latest`
-- `--output <path>`
-- `--feed <url>`
-- `--nuget-config <path>`
-- `--auth-mode <Auto|Interactive|NonInteractive>`
-- `--feed-token-env <feedUrl=ENV_VAR>`
-- `--pat <token>`
-- `--config <path>`
-- `-v|--verbose`
-- `-q|--quiet`
+`--changed-since` accepts `latest` (the newest local tag), `latest:<glob>` (the newest tag that
+matches, for example `latest:v*`), `latest-merge:<text>` (the nearest merge commit on the
+first-parent history whose message contains the text), or a tag, branch, or commit. ALWasp reads
+the local Git history and does not fetch.
 
-## symbols
+### Business Central version
 
-```bash
-alwasp symbols create <app> [--output <file-or-folder>]
-alwasp symbols pack <symbolApp> [--output <folder>]
-alwasp symbols push <package> --source <feed-or-folder>
-alwasp symbols publish <app> --source <feed-or-folder> [--output <folder>]
-```
+`--bc-version` and `--bc-country` are accepted by `build`, `workspace build`,
+`validate compatibility`, `artifacts resolve`, `artifacts download`, and `translation prepare`.
+See [Business Central Versions](/docs/bc-version/). `--bc-target` is a deprecated alias of
+`--bc-version`.
 
-`create` uses ALTool to produce a verified symbol-only app. `pack` wraps it in a NuGet package
-using the app identity/version and explicit dependencies. `push` validates and publishes an
-existing package; `publish` runs all three stages and stops on the first failure. `build` never
-publishes automatically.
+## Restore and build
 
-- `pack` / `publish`: repeatable `--dependency-package-id <appId=packageId>` for dependencies
-  published under non-standard IDs.
-- `push` / `publish`: required `--source`, optional `--api-key` (fallback
-  `ALWASP_NUGET_API_KEY`, then `nuget.config`), `--skip-duplicate`, `--nuget-config`,
-  `--auth-mode`, `--feed-token-env`, and `--pat`.
-- All four support verbose/quiet and global structured-output options. Failures report
-  `failedStage`; NDJSON includes `symbols.stage` events.
-
-See [Symbol Packages](/docs/symbol-packages/) for defaults, validation rules, dependency
-mapping, and examples. The standalone visual CLI reference includes the full option lists.
-
-## build
+### restore
 
 ```bash
-alwasp build [targetOrPath]
+alwasp restore [appJsonPath] [--latest] [--output <path>]
 ```
 
-With `alwasp.json`, `targetOrPath` is a target or profile name. Without config, it is a path to `app.json`.
+Restores the symbols of one project. `--latest` uses the newest dependency versions. `--output`
+sets the packages folder. [Guide](/docs/restore/) · [All options](/alwasp-cli-reference.html#c-restore)
 
-Config-driven options include:
-
-- `--config <path>`
-- `--profile <name>`
-- `--manifest [path]` — defaults to `.alwasp/build-manifest.json` when the path is omitted
-- `--continue-on-error`
-- `--diagnostics` (alias `--diagnostic`) — list individual compiler errors and analyzer warnings
-- `--changed-since <ref>`
-- `--plan <path>` — consume a plan from `alwasp plan` instead of resolving selection directly;
-  cannot be combined with a positional target or `--profile`; `--changed-since` may be supplied
-  only to resolve changed-only versioning and must match the plan's recorded base
-- `--clean` — remove prior ALWasp package cache, compiled output, compiler log, and
-  build-manifest artifacts before restoring and compiling
-- restore/feed options
-
-Single-project options include:
-
-- `--out <file>`
-- `--outfolder <dir>`
-- `--warnaserror`
-- `--nowarn <code>`
-- `--errorlog <file>`
-- `--ruleset <file>`
-- `--target <Cloud|OnPrem|...>`
-- `--parallel`
-- `--max-parallelism <int>`
-- `--define <symbol>`
-- `--features <feature>`
-- analyzer flags
-
-Direct dependency-aware builds accept `--project <dir>` or recursive `--project-root <dir>`.
-Root mode also accepts repeatable `--app <name|appId|relativePath>`, `--changed-since`, and
-`--include-dependents`. Required local dependencies compile but are not collected as selected
-outputs. Direct options exclude positional target/path, `--config`, `--profile`, and `--plan`;
-`--outfolder` sets output and `--out` is rejected. Without `--outfolder`, the projects’ VS Code
-`al.compilationOptions.outFolder` / `al.packageOutputPath` wins, then `<base>/.output`
-(or `.output/<version>-<country>` for artifact builds). Settings folders are used as given;
-conflicting project folders fail before compilation. `build` has no `--workspace` option.
-
-Direct and configured modes accept `--bc-target current|next-minor|next-major`, `--bc-version`,
-and exactly one `--bc-country` (default `restore.country`, else `W1`). An explicit `current` selects the latest
-released artifact; pinned/Insider builds also use one artifact’s Microsoft symbols/compiler/analyzers.
-Without a target or version, builds retain NuGet symbols/tools; country alone selects NuGet localization.
-These options are rejected for positional app.json builds. See [Build](/docs/build/).
-
-## plan
+### build
 
 ```bash
-alwasp plan ci --changed-since origin/main --plan-file .alwasp/alwasp-plan.json
-alwasp build --plan .alwasp/alwasp-plan.json
+alwasp build [targetOrProfile]                 # config-driven
+alwasp build --project <dir>                   # direct
+alwasp build --project-root <dir> [--app <app>]...
+alwasp build [path/to/app.json]                # single project
 ```
 
-Options:
+| Options | Mode |
+|---|---|
+| `--config`, `--profile`, `--manifest [path]`, `--continue-on-error`, `--changed-since`, `--plan <path>` | Config-driven |
+| `--project`, `--project-root`, `--app`, `--changed-since`, `--include-dependents`, `--outfolder` | Direct |
+| `--out`, `--outfolder`, `--warnaserror`, `--nowarn`, `--errorlog`, `--ruleset`, `--target`, `--parallel`, `--max-parallelism`, `--define`, `--features`, `--codecop`, `--appsourcecop`, `--ptecop`, `--uicop`, `--custom-analyzers` | Single project |
+| `--bc-version`, `--bc-country` | Config-driven and direct |
+| `--clean`, `--restore`, `--latest`, `--packages`, `--diagnostics` | All |
 
-- `--config <path>` / `--profile <name>`
-- `--changed-since <ref>` (required)
-- `--plan-file <path>` — defaults to `.alwasp/alwasp-plan.json`; relative paths resolve from the
-  current directory
+[Guide](/docs/build/) · [All options](/alwasp-cli-reference.html#c-build)
 
-Creates a deterministic, timestamp-free CI plan without compiling: directly changed projects,
-downstream applications, affected test apps, and the internal prerequisites needed to compile
-them, plus dependency build levels, deployment order, repository commit IDs, changed-file hashes,
-the configuration hash, and an input fingerprint. A change to `alwasp.json`, a configured NuGet
-config, or an active ruleset selects the complete requested target; no relevant changes produce a
-successful empty plan; dependency cycles fail plan creation. Consume the plan with
-`alwasp build --plan <path>`. See [CI/CD](/docs/ci-cd/#deterministic-ci-plans).
-
-## check
+### plan
 
 ```bash
-alwasp check ci
-alwasp check --profile appsource --changed-since origin/main
-alwasp check --plan .alwasp/alwasp-plan.json
-alwasp check ci --format json --result-file .alwasp/check-result.json
+alwasp plan [targetOrProfile] --changed-since <ref> [--plan-file <path>] [--config <path>]
 ```
 
-Runs configured verification gates over one resolved selection: configuration, restore/build,
-compiler diagnostics, compatibility, and translation coverage. Tests compile but are not executed.
-Requires `alwasp.json`; options include `--config`, `--profile`, `--changed-since`, `--plan`,
-`--continue-on-error`, and feed/authentication options. Plan conflicts and stale-plan checks match
-build. Independent translation checks continue after build failure. Exit `0` requires no failed
-step. See [Verification with check](/docs/check/).
+Writes a changed-only build and test plan and compiles nothing. `--changed-since` is necessary.
+The default file is `.alwasp/alwasp-plan.json`.
+[Guide](/docs/build/#plan-based-builds) · [All options](/alwasp-cli-reference.html#c-plan)
+
+### check
+
+```bash
+alwasp check [targetOrProfile] [--profile <name>] [--changed-since <ref>] [--plan <path>]
+```
+
+Runs the configured gates on one selection: configuration, restore, build, compiler diagnostics,
+compatibility, and translations. Needs `alwasp.json`. Also accepts `--continue-on-error` and the
+feed options. [Guide](/docs/check/) · [All options](/alwasp-cli-reference.html#c-check)
+
+### workspace restore
+
+```bash
+alwasp workspace restore [workspacePath] [--latest] [--packages <path>]
+```
+
+Restores the symbols of all projects of a `.code-workspace` file into one packages folder.
+[Guide](/docs/restore/#workspace-vs-code-package-caches) · [All options](/alwasp-cli-reference.html#c-workspace-restore)
+
+### workspace build
+
+```bash
+alwasp workspace build [workspacePath] [--outfolder <dir>] [--max-cpu-count <n>]
+```
+
+| Options | Purpose |
+|---|---|
+| `--bc-version`, `--bc-country` | Business Central version |
+| `--packages`, `--restore`, `--latest`, `--clean` | Symbols |
+| `--ruleset`, `--nowarn` (not together), the analyzer options, `--custom-analyzers`, `--define`, `--features` | Compiler |
+| `--max-cpu-count <n>` | Number of projects that compile at the same time |
+| `--outfolder <dir>`, `--manifest [path]`, `--log-directory <dir>`, `--diagnostics` | Output |
+| `--source-url <url>`, `--source-commit <id>` | Source repository data that is put into the compiled packages |
+
+[Guide](/docs/build/#workspace-build) · [All options](/alwasp-cli-reference.html#c-workspace-build)
+
+## Configuration and versions
 
 <a id="init"></a>
 
-## config init
+### config init
 
 ```bash
-alwasp config init
-alwasp config init --force
-alwasp config init --include-tests
+alwasp config init [--force] [--include-tests]
 ```
 
-Creates an `alwasp.json` starter config in the current directory.
-Since 0.5.8, the top-level `init` command is removed with no alias; use `config init`.
+Writes a starter `alwasp.json` in the current folder from the projects in its direct child
+folders. `--force` replaces a file that exists. `--include-tests` adds the test apps to `tests`.
+[Guide](/docs/configuration/#inventory-classification) · [All options](/alwasp-cli-reference.html#c-config-init)
 
-Scans direct child projects and classifies source. Confirmed tests are omitted by default;
-`--include-tests` puts them in `tests`. Unknown source enters `apps` with a review warning.
-Folder names are not classification evidence. The old `--include-tests-by-name` option has no alias.
-
-## config validate
+### config validate
 
 ```bash
-alwasp config validate
-alwasp config validate --config path/to/alwasp.json
+alwasp config validate [--config <path>]
 ```
 
-Exits `0` when valid and `1` when errors are found.
+Reports all configuration errors in one run. Exit code `0` when valid, `1` when not.
+[Guide](/docs/configuration/#validate) · [All options](/alwasp-cli-reference.html#c-config-validate)
 
 <a id="version-apply"></a>
 <a id="version-resolve"></a>
 
-## version resolve / apply
+### version resolve / version apply
 
 ```bash
-alwasp version apply [targetOrProfile]
-alwasp version apply --profile appsource
-alwasp version apply --changed-since latest:v*
-alwasp version apply --changed-since "latest-merge:version-increase"
+alwasp version resolve [targetOrProfile]
+alwasp version apply [targetOrProfile] [--changed-since <ref>]
 alwasp version resolve --project-root ./src --release-type Preview
 alwasp version apply --project ./App --release-type Dev
 ```
 
-`version apply` permanently writes calculated versions and configured internal dependency version updates to selected projects' `app.json` files. It does not restore, compile, commit, tag, or push.
+`resolve` reports the calculated versions. `apply` writes them, and the versions of dependencies
+on selected projects, into `app.json` permanently. The commands do not restore, compile, commit,
+or tag.
 
-`version resolve` uses the same selection and calculation without applying changes. Its structured
-result reports current/next versions and `wouldUpdate` instead of `updated`.
+| Option | Effect |
+|---|---|
+| `--release-type <Release\|Preview\|Dev\|None>` | Replaces `versioning.releaseType`. Without configuration the default is `Release` |
+| `--version-source <AppJson\|Nuget>` | Replaces `versioning.source`. `Nuget` uses the newest published version on the feeds and `app.json` when there is none. Without configuration the default is `AppJson` |
+| `--no-dependency-update` | Do not update dependency versions |
+| `--dependency-update-scope <DirectlyChanged\|AllVersioned>` | Replaces `versioning.dependencyUpdateScope` |
+| `--project`, `--project-root`, `--app`, `--include-dependents` | Direct selection without `alwasp.json` |
 
-Both commands support configured target/profile selection or direct `--project <dir>` /
-recursive `--project-root <dir>` selection without `alwasp.json`. Direct selection excludes a
-positional target/profile, `--profile`, and `--config`. Root mode accepts repeatable
-`--app <name|appId|relativePath>`. Each project is calculated from its own current version.
+In direct mode, `--changed-since` selects only the apps whose own files changed. In configured
+mode, `versioning.applyTo` and `changeDetection` apply.
+[Guide](/docs/configuration/#versioning) · [All options](/alwasp-cli-reference.html#c-version-apply)
 
-Policy options override configured `versioning` fields:
+## Verification
 
-- `--release-type <Release|Preview|Dev|None>`; direct default `Release`
-- `--version-source <AppJson|Nuget>`; direct default `AppJson`. `Nuget` uses the latest published
-  version on the configured feeds, falling back to app.json by default; feed/auth options apply.
-  Explicit versions belong in configuration.
-- `--no-dependency-update` disables internal dependency version updates
-- `--dependency-update-scope <DirectlyChanged|AllVersioned>`; default `DirectlyChanged`
-
-In direct mode, `--changed-since` versions only apps whose own files changed;
-`--include-dependents` adds transitive dependents and requires `--changed-since`. Configured mode
-retains `versioning.applyTo` and `changeDetection` policy.
-
-`versioning.releaseType` accepts `Release`, `Preview`, `Dev`, or `None`. Release and Preview periods switch on the Friday closest to the 15th of each month; see [Release and Preview periods](/docs/configuration/#release-and-preview-periods) for the calculation table and boundary example.
-
-Both `build --changed-since` and `version apply --changed-since` accept `latest`, `latest:<glob>`, `latest-merge:<text>`, or an explicit tag, branch, or commit. `latest-merge` searches the head's first-parent history for the nearest matching merge message.
-
-## analyze
-
-```bash
-alwasp analyze
-alwasp analyze ci --changed-since latest
-alwasp analyze --project src/Core --json out/analysis.json
-```
-
-Options:
-
-- `--project <dir>` / `--project-root <dir>` / `--workspace <file>` for direct selection, or `[targetOrProfile]` / `--config` / `--profile` for config-driven selection
-- `--changed-since <ref>` activates object-level change detection
-- `--include <section,...>` narrows the report to named sections (repeatable or comma-separated)
-- `--max-depth <int>` caps impact propagation for `impacted-tests`
-- `--max-items <int>` caps console entries per section; `0` or `--verbose` lists everything
-- `--json <path>` writes the full versioned report
-
-Static source analysis over `.al` files and git only — no compiler, no symbol restore, no
-network. See [Source Analysis](/docs/analyze/) for the seven report sections, object identity
-rules, diagnostics, and the report contract.
-
-## compare
-
-```bash
-alwasp compare <baseline.app> <current.app>
-```
-
-Options:
-
-- `--json <path>` writes the compare report as JSON
-
-`compare` is an informational public-symbol change log, not a compatibility gate: it groups
-findings by namespace as `REMOVED`, `CHANGED`, or `ADDED`, and a completed comparison always
-exits `0`. Unreadable packages, mismatched app IDs, invalid arguments, or a report-write failure
-exit `1`. There is no `--fail-on` option — use `validate compatibility` for an authoritative
-compatibility gate. See [Compatibility](/docs/compatibility/) for classifications, limitations,
-and examples.
-
-## validate compatibility
+### validate compatibility
 
 ```bash
 alwasp validate compatibility [targetOrProfile]
 alwasp validate compatibility --project <dir> --baseline <previous.app>
-alwasp validate compatibility --project-root <dir> --baseline-directory <dir>
+alwasp validate compatibility --project-root <dir> [--baseline-directory <dir>]
 alwasp validate compatibility --project-root <dir> --get-baseline-symbols [feed-url]
+alwasp validate compatibility --workspace <file> [--app <app>]...
 ```
 
-Options include:
+| Option | Effect |
+|---|---|
+| `--baseline <app>` | The previous package, for `--project` |
+| `--baseline-directory <dir>` | A folder with baseline packages, matched by app ID |
+| `--get-baseline-symbols [feed-url]` | Download the latest stable baseline of each selected app. Default feed: Microsoft AppSourceSymbols |
+| `--changed-since <ref>`, `--include-dependents` | Validate only changed apps, and optionally their dependents |
+| `--packages <dir>` | The folder with the current dependency packages |
+| `--ruleset <file>` | Ruleset for diagnostic severities |
+| `--bc-version <list>` | `minimum` (default), `current`, `next-minor`, `next-major`, or a version. Accepts a comma-separated list |
+| `--bc-country <list>` | Country code or a comma-separated list |
+| `--max-parallel-processing <n>` | Number of version and country combinations that run at the same time |
+| `--fail-on-next` | Make Insider failures fail the run when the list includes `current` |
+| `--keep-artifacts` | Do not clean the artifact cache after this run |
 
-- `--project <dir>` and `--baseline <app>` for one direct project
-- `--project-root <dir>` and `--baseline-directory <dir>` for recursive multi-app discovery
-- `--workspace <file>` selects only folders directly containing `app.json`, without recursion;
-  baseline directories or published symbols are supported
-- `--app <name|id|path>` selects a validation root in project-root/workspace mode; repeat for multiple
-  apps. Required local dependencies still compile. Unknown or ambiguous selectors fail.
-- `--get-baseline-symbols [feed-url]` downloads each selected app's latest stable baseline;
-  omit the URL to use Microsoft AppSourceSymbols
-- `--changed-since <ref>` limits project-root/workspace validation to apps whose own files changed;
-  accepts `latest`, `latest:<glob>`, `latest-merge:<text>`, or a Git ref
-- `--include-dependents` also validates transitive dependents with `--changed-since`
-- `--packages <dir>` for current dependency packages
-- `--ruleset <file>` for compiler diagnostic severity overrides
-- `--bc-target <current|next-minor|next-major>` (also comma-separated lists), `--bc-version <version>`, and
-  `--bc-country <code,...>` select the Business Central artifacts used for validation
-- `--max-parallel-processing <N>` bounds concurrent target/country combinations (positive;
-  default all combinations, capped at half the logical processors; `1` runs sequentially)
-- `--fail-on-next` makes Insider failures fatal when the target list includes `current`;
-  otherwise they warn. Runs without `current` fail on any combination failure.
-- `--keep-artifacts` skips automatic artifact cleanup for this run
-- `--config <file>` / `--profile <name>` in config-driven mode
-- restore/feed/authentication options
-- `-v|--verbose` and `-q|--quiet`
+[Guide](/docs/compatibility/) · [All options](/alwasp-cli-reference.html#c-validate-compatibility)
 
-Apps with baselines compile with AppSourceCop. Project-root/workspace mode permits no baseline
-source; apps lacking baselines still compile with non-baseline analyzers and report compatibility
-N/A. Discovered confirmed tests are excluded; explicit selection and configuration take precedence.
-Target lists exclude `--bc-version`. See [Compatibility](/docs/compatibility/#validate-multiple-targets-and-countries)
-for isolation, failure policy, result fields, and artifact cleanup.
-
-## translation prepare / validate
+### compare
 
 ```bash
-alwasp translation prepare fr-FR --context de-DE
-alwasp translation validate ./MyApp.fr-FR.xlf
+alwasp compare <baseline.app> <current.app> [--json <path>]
 ```
 
-`translation prepare` creates deterministic packages for a human or external translation service;
-`translation validate` checks returned XLIFF against its authoritative source. ALWasp does not
-translate text or connect to an AI service. See [Translation Preparation](/docs/translation-preparation/)
-for selection modes, package contents, terminology, and validation rules.
+Lists the public-symbol changes between two compiled packages as `REMOVED`, `CHANGED`, or `ADDED`.
+It is a change report, not a gate: a completed comparison exits `0`.
+[Guide](/docs/compatibility/#compare-compiled-packages) · [All options](/alwasp-cli-reference.html#c-compare)
 
-Preparation accepts `--project`, `--project-root`, `--workspace`, or `--config` / `--profile`
-selection, optional `--context <locale>`, and repeatable `--parent-source-folder <dir>` for
-dependency source context. `--bc-target current|next-minor|next-major`, `--bc-version`, and
-`--bc-country` select Microsoft terminology. Output is `.alwasp/translation/<language>`;
-apps must list the target locale in `app.json`'s `supportedLocales` and have translation work.
-Edit and return the manifest's `translationFile`, named `<App Name>.<language>.xlf`.
-
-`--glossary <json>` supplies approved locale terminology to prepare or validate.
-`--expected-bc-version <version>` warns about terminology-version mismatches without changing
-artifact selection. `translation validate <package-directory>` checks all returned apps using
-packaged sources, glossary, and terminology; it excludes project selection and `--source`.
-
-## artifacts download
+### analyze
 
 ```bash
-alwasp artifacts download --bc-target next-major --bc-country DE
-alwasp artifacts download --bc-version 27.1.0.0
+alwasp analyze [targetOrProfile] [--changed-since <ref>] [--include <section,...>] [--json <path>]
 ```
 
-Downloads, verifies, and caches Business Central artifacts independently of compatibility
-validation. Use `--bc-target <next-minor|next-major>` or pin a concrete four-part
-`--bc-version <version>`; `--bc-country <code>` selects localization and defaults to `W1`.
-There is no `--output` option; artifacts use the shared artifact cache.
+| Option | Effect |
+|---|---|
+| `--include <section,...>` | Report only these sections |
+| `--max-depth <n>` | Limit how far impact is followed for `impacted-tests` |
+| `--max-items <n>` | Limit the console entries of each section; `0` or `--verbose` lists all |
+| `--json <path>` | Write the full report |
 
+[Guide](/docs/analyze/) · [All options](/alwasp-cli-reference.html#c-analyze)
 
-## artifacts resolve
+### validate translations
 
 ```bash
-alwasp artifacts resolve
-alwasp artifacts resolve --bc-target next-major --bc-country DE
-alwasp artifacts resolve --bc-version 28.0 --bc-country DE
-alwasp artifacts resolve --verbose
-alwasp artifacts resolve --format json --result-file resolved.json
+alwasp validate translations [targetOrProfile] [--languages <tag,...>] [--fail-on <level>]
 ```
 
-Read-only lookup of concrete Business Central versions and matching Application/Platform artifact
-URLs. Only artifact indexes are read; no artifact is downloaded, extracted, or cached.
+| Option | Effect |
+|---|---|
+| `--languages <tag,...>` | The necessary languages; also limits the check to these languages |
+| `--fail-on <none\|missing-language\|missing-unit\|untranslated\|needs-review>` | The level from which findings fail the command. Default `untranslated` |
+| `--min-coverage <percent>` | Minimum coverage for each language |
+| `--require-generated` | Fail a project that has no generated `.g.xlf` |
+| `--check-placeholders` | The translation must have the same placeholders as the source |
+| `--max-issues <n>` | Number of issues listed for each language. Default `10`; `0` lists all |
+| `--json <path>` | Write the coverage report |
 
-- `--bc-target <current|next-minor|next-major>` resolves one target; omit it for all three.
-- `--bc-version <version>` resolves one pinned version: a two-/three-part prefix selects the
-  newest released match; a full four-part version selects that build. It excludes non-current
-  `--bc-target`. Released artifacts are tried first; an exact build may fall back to Insider artifacts.
-- `--bc-country <code>` selects one country, case-insensitively; default `W1`.
-- `-v|--verbose` includes URLs in the all-target text table; single-target text always includes them.
-- `-q|--quiet`, `--format text|json|ndjson`, and `--result-file <path>` follow standard output controls.
+Exit codes: `0` passed, `1` invalid input, `2` the gate failed.
+[Guide](/docs/translations/) · [All options](/alwasp-cli-reference.html#c-validate-translations)
 
-`current` resolves the newest released version with matching country and platform artifacts.
-This lookup does not change `build --bc-target current` or `workspace build --bc-target current`,
-which retain NuGet symbols and tools. Insider targets use the same resolution as artifact builds
-and may resolve to the same version. Each URL pair belongs to one concrete version.
+## Translation
 
-One-target JSON exposes `data.target`, `version`, `country`, `source`, and
-`artifacts.application` / `artifacts.platform`. All-target JSON uses `data.results` in the order
-`current`, `next-minor`, `next-major`; failed entries contain `target` and `error`.
-NDJSON emits an `artifactResolved` event per successful target and a final result.
-Exit `0` means all requested targets resolved; exit `1` means failure. In all-target mode,
-failures are reported individually and any failed target fails the command.
+### translation prepare
 
 ```bash
-VERSION=$(alwasp artifacts resolve --bc-target next-major --format json | jq -r .data.version)
+alwasp translation prepare <language> [--context <locale>] [--glossary <json>]
 ```
 
-## artifacts prune
+Writes a translation package to `.alwasp/translation/<language>`. Also accepts
+`--parent-source-folder <dir>` (repeatable), `--bc-version`, `--bc-country`, and
+`--expected-bc-version <version>`.
+[Guide](/docs/translation-preparation/) · [All options](/alwasp-cli-reference.html#c-translation-prepare)
+
+### translation validate
 
 ```bash
-alwasp artifacts prune --dry-run
-alwasp artifacts prune --older-than 7
-alwasp artifacts prune --all
+alwasp translation validate <file.xlf | package-directory> [--source <source.xlf>] [--language <tag>]
 ```
 
-Cleans `~/.alwasp/artifacts`: builds superseded in the same major/minor line and country once
-unused for a day, artifacts unused for `--older-than <days>` (positive, default `14`), and
-abandoned downloads older than a day. `--all` removes every completed artifact not in use;
-`--dry-run` reports without deleting. Artifacts used by another ALWasp process are retained.
-Non-dry runs also remove stale ALWasp temporary run directories older than a day.
-Prune also removes per-user state whose owning folder is gone. If its parent still exists,
-the state must have been unused for `--older-than` days; state whose parent is also gone can
-be removed immediately. Artifact caches locked by a running build are retained. Structured
-results list the removed owners in `stateDirectoriesRemoved`; `--dry-run` previews them.
-JSON/NDJSON and standard logging options are supported. Removal failures exit `1`.
+Validates a returned XLIFF file or a full package. Also accepts `--glossary` and
+`--expected-bc-version`. Exit codes: `0` valid, `1` invalid input, `2` validation errors.
+[Guide](/docs/translation-preparation/#validate-returned-xliff) · [All options](/alwasp-cli-reference.html#c-translation-validate)
 
-Automatic compatibility cleanup additionally removes Insider artifacts; see
-[Artifact cache cleanup](/docs/compatibility/#artifact-cache-cleanup).
-
-## validate translations
+### translation apply
 
 ```bash
-alwasp validate translations
-alwasp validate translations release
-alwasp validate translations --project src/Core --languages da-DK,de-DE
-alwasp validate translations --project-root ./src --json output/translations.json
+alwasp translation apply <package> [--dry-run]
 ```
 
-Options:
+Writes the validated new, missing, and source-changed units of a package into the target XLIFF
+files. Exit codes: `0` applied, `1` invalid input, `2` blocked.
+[Guide](/docs/translation-preparation/#apply-returned-translations) · [All options](/alwasp-cli-reference.html#c-translation-apply)
 
-- `--project <dir>` / `--project-root <dir>` / `--workspace <file>`, or `[targetOrProfile]` / `--config` / `--profile`
-- `--languages <tag,...>` required language tags, overriding `translations.languages`; when
-  non-empty, also scopes the check to just these languages
-- `--check-placeholders` requires matching `%1`/`{0}`/`#`-style placeholders between source and target
-- `--fail-on <none|missing-language|missing-unit|untranslated|needs-review>` — default `untranslated`
-- `--min-coverage <percent>` per-language coverage floor
-- `--require-generated` fails a project with no generated `.g.xlf` instead of only warning
-- `--changed-since <ref>` scopes configured projects to the changed set (config-driven only)
-- `--json <path>` writes the coverage report
-
-Compares each project's generated XLIFF against its language files; no compiler or symbol
-restore involved. Exit codes: `0` clean, `1` bad usage/unreadable file, `2` gate failed. See
-[Translation Coverage](/docs/translations/) for finding types, XLIFF Sync interop, and
-configuration.
-
-## workspace
+### skills install
 
 ```bash
-alwasp workspace restore [workspacePath]
-alwasp workspace build [workspacePath]
+alwasp skills install alwasp-translate [--user] [--check] [--force]
 ```
 
-Workspace commands operate directly on `.code-workspace` files. They remain useful as low-level operations, but config-driven `alwasp build` is preferred for multi-project repositories.
+Installs or updates an agent skill that is in the tool package.
+[Guide](/docs/translation-skill/) · [All options](/alwasp-cli-reference.html#c-skills-install)
 
-Supported VS Code AL settings are read per project; explicit CLI options win. See
-[Workspace settings](/docs/build/#vs-code-al-settings-for-workspace-builds).
+## Packages
 
-Common `workspace build` options:
-
-- `--bc-target <current|next-minor|next-major>` — `current` uses the latest released artifact;
-  Insider targets use Insider artifacts; excludes `--bc-version`. Without BC options, symbols/tools use NuGet
-- `--bc-version <version>` — exact four-part released build or latest match for a two-/three-part
-  version; excludes `--bc-target`
-- `--bc-country <code>` — artifact country, default `W1`; country alone selects the latest
-  released build in the highest workspace application major/minor line
-- `--restore`
-- `--packages <path>`
-- `--outfolder <dir>`
-- `--max-cpu-count <int>`
-- `--nowarn <code>`
-- `--ruleset <file>`
-- `--log-directory <dir>` — defaults to `~/.alwasp/state/<workspace-key>/logs`, outside the repository
-- `--diagnostics`
-- `--manifest [path]` — defaults to `.alwasp/build-manifest.json` when the path is omitted
-- `--clean` — remove prior ALWasp package cache, compiled output, compiler log, and
-  build-manifest artifacts before restoring and compiling
-
-Artifact selection uses matching Microsoft symbols and tools, with partner dependencies restored
-through NuGet. `--clean` also clears the workspace's other artifact package caches, skipping
-caches in use. See [Workspace build](/docs/build/#business-central-artifact-selection) for cache
-paths and compiler requirements.
-
-## tools update
+### symbols create / pack / push / publish
 
 ```bash
-alwasp tools update
-alwasp tools update --check
-alwasp tools update --clean
+alwasp symbols create <app> [--output <file-or-folder>]
+alwasp symbols pack <symbolApp> [--output <folder>] [--dependency-package-id <appId=packageId>]...
+alwasp symbols push <package> --source <feed-or-folder> [--api-key <key>] [--skip-duplicate]
+alwasp symbols publish <app> --source <feed-or-folder> [--output <folder>]
 ```
 
-Checks NuGet.org for the latest `Microsoft.Dynamics.BusinessCentral.Development.Tools` package and ensures the latest `alc` / `altool` binaries are cached under `~/.alwasp/tools/<version>/`.
+Makes a symbol-only app, packs it into a NuGet package, and pushes it to a feed. `publish` runs
+the three stages. [Guide](/docs/symbol-packages/) · [All options](/alwasp-cli-reference.html#c-symbols)
 
-Options:
-
-- `--check` reports whether a newer version is available without downloading or deleting anything; exits `2` when an update exists
-- `--clean` removes older cached tool versions after the latest version is present
-- `-v|--verbose`
-- `-q|--quiet`
-
-## app set-package-id
+### app pack / push / publish
 
 ```bash
-alwasp app set-package-id <appPath>
-alwasp app set-package-id <appPath> --out <path>
+alwasp app pack <app> [--output <folder>] [--dependency-package-id <appId=packageId>]...
+alwasp app push <package> --source <feed-or-folder> [--api-key <key>] [--skip-duplicate]
+alwasp app publish <app> --source <feed-or-folder> [--output <folder>]
 ```
 
-Assigns a new random deployment package ID to a compiled `.app` file so the same artifact can be re-uploaded to a Business Central sandbox. The app identity from `app.json` is unchanged.
+Packs the full compiled app into a NuGet package and pushes it to a feed. `publish` runs the two
+stages. [Guide](/docs/app-packages/) · [All options](/alwasp-cli-reference.html#c-app)
 
-By default the file is rewritten in place. Use `--out` to write a modified copy and leave the original untouched.
+`push` and `publish` of the two groups accept `--source` (necessary), `--api-key`,
+`--skip-duplicate`, `--nuget-config`, `--auth-mode`, `--feed-token-env`, and `--pat`.
+
+### app set-package-id
+
+```bash
+alwasp app set-package-id <appPath> [--out <path>]
+```
+
+Gives a compiled `.app` a new random deployment package ID, so that you can upload the same app to
+a Business Central sandbox again. The app ID in `app.json` does not change. Without `--out`, the
+file is changed in place. The command changes a local file and uses no network.
+[All options](/alwasp-cli-reference.html#c-app-set-package-id)
+
+## Artifacts and tools
+
+### artifacts resolve
+
+```bash
+alwasp artifacts resolve [--bc-version <version>] [--bc-country <code>]
+```
+
+Shows the Business Central version and the artifact URLs that a name or version means. It reads
+only the artifact indexes; nothing is downloaded or cached. Without `--bc-version`, it resolves
+`current`, `next-minor`, and `next-major`; if one of them fails, the command fails. `--verbose`
+adds the URLs to the table.
+
+```bash
+VERSION=$(alwasp artifacts resolve --bc-version next-major --format json | jq -r .data.version)
+```
+
+[Guide](/docs/bc-version/) · [All options](/alwasp-cli-reference.html#c-artifacts-resolve)
+
+### artifacts download
+
+```bash
+alwasp artifacts download --bc-version <next-minor|next-major|build> [--bc-country <code>]
+```
+
+Downloads and verifies one artifact into `~/.alwasp/artifacts`. There is no output option.
+[All options](/alwasp-cli-reference.html#c-artifacts-download)
+
+### artifacts prune
+
+```bash
+alwasp artifacts prune [--dry-run] [--older-than <days>] [--all]
+```
+
+Cleans `~/.alwasp/artifacts` and the state of folders that no longer exist.
+
+| Removed | Condition |
+|---|---|
+| Superseded builds | A newer build of the same major.minor and country is cached, and the build was not used for one day |
+| Unused artifacts | Not used for `--older-than` days (default `14`) |
+| Incomplete downloads and temporary run folders | Older than one day |
+| All completed artifacts | With `--all` |
+| State of a folder that no longer exists | Not used for `--older-than` days, or immediately when its parent folder is also gone |
+
+Artifacts and caches that a running ALWasp process uses stay. `--dry-run` only reports.
+[Guide](/docs/compatibility/#artifact-cache-cleanup) · [All options](/alwasp-cli-reference.html#c-artifacts-prune)
+
+### tools update
+
+```bash
+alwasp tools update [--check] [--clean]
+```
+
+Downloads the newest AL compiler tools package into `~/.alwasp/tools/<version>/`. `--check` only
+reports and exits `2` when an update is available. `--clean` removes older cached versions.
+[Guide](/docs/bc-version/#al-compiler-selection) · [All options](/alwasp-cli-reference.html#c-tools-update)
+
+## More reference
+
+- [Exit codes, environment variables, and files](/docs/reference/)
+- [Structured Output](/docs/structured-output/)

@@ -1,62 +1,82 @@
 ---
 title: Installation
-description: Install, upgrade, and remove the single ALWasp .NET tool package.
-order: 1.5
+description: Install, update, pin, and remove the ALWasp .NET tool.
+group: Start
+order: 2
 ---
 
 # Installation
 
-ALWasp is one .NET tool package, `left-code.AlWasp`, exposing the command `alwasp`. It includes
-restore, build, symbol-package creation/publication, static AL source analysis, XLIFF translation coverage validation, and structured
-JSON/NDJSON output. None of its commands requires a license.
+ALWasp is one .NET tool package, `left-code.AlWasp`, published on NuGet.org. The command is
+`alwasp`. The package contains all commands. ALWasp is free to use under its
+[license agreement](/docs/license/); no license key is necessary.
 
-The documented release tag is `v0.5.10`. Once the corresponding package is available on NuGet.org,
-install or update using the commands below. ALWasp targets
-`net10.0`; install the .NET 10 SDK or runtime before installing or upgrading ALWasp.
+**Requirement:** the .NET 10 SDK or runtime.
 
-## Global install
+## Install the newest version
 
 ```bash
-dotnet tool install --global left-code.AlWasp --version 0.5.10
+dotnet tool install --global left-code.AlWasp
 alwasp --version
 ```
 
-Upgrade or uninstall the global tool with the same package ID:
+## Update or remove
 
 ```bash
-dotnet tool update --global left-code.AlWasp --version 0.5.10
+dotnet tool update --global left-code.AlWasp
 dotnet tool uninstall --global left-code.AlWasp
 ```
 
-## Explicit tool path
+After an update, read the [Release Notes](/docs/release-notes/). Entries marked **Migration** or
+**Behavior change** can require a change in your scripts.
 
-For CI and clean-machine validation, an explicit tool path keeps the installation isolated.
+## Install a specified version
+
+Pin the version in CI so that all runs use the same tool:
+
+```bash
+dotnet tool install --global left-code.AlWasp --version <version>
+dotnet tool update --global left-code.AlWasp --version <version>
+```
+
+The version that this documentation describes is shown in the page footer.
+
+## Isolated tool path
+
+An explicit tool path keeps the installation separate from the global tools. This is useful on
+shared build agents and for a test on a clean machine.
 
 ### Windows PowerShell
 
 ```powershell
-$Version = "0.5.10"
 $Tool = Join-Path $HOME ".alwasp-tools\alwasp"
 
-dotnet tool install left-code.AlWasp --version $Version --tool-path $Tool
+dotnet tool install left-code.AlWasp --tool-path $Tool
 & (Join-Path $Tool "alwasp.exe") --version
 
-dotnet tool update left-code.AlWasp --version $Version --tool-path $Tool
+dotnet tool update left-code.AlWasp --tool-path $Tool
 dotnet tool uninstall left-code.AlWasp --tool-path $Tool
 ```
 
-### Linux
+### Linux and macOS
 
 ```bash
-VERSION="0.5.10"
 TOOL="$HOME/.alwasp-tools/alwasp"
 
-dotnet tool install left-code.AlWasp --version "$VERSION" --tool-path "$TOOL"
+dotnet tool install left-code.AlWasp --tool-path "$TOOL"
 "$TOOL/alwasp" --version
 
-dotnet tool update left-code.AlWasp --version "$VERSION" --tool-path "$TOOL"
+dotnet tool update left-code.AlWasp --tool-path "$TOOL"
 dotnet tool uninstall left-code.AlWasp --tool-path "$TOOL"
 ```
 
-If you previously used `left-code.AlWasp.Pro`, uninstall that package and install
-`left-code.AlWasp`. The former Pro-only commands are now included unconditionally.
+## What the installation does not include
+
+The AL compiler is not in the package. ALWasp downloads it from NuGet.org on the first build and
+keeps it in `~/.alwasp/tools`. See [AL compiler selection](/docs/bc-version/#al-compiler-selection)
+and [Files and folders](/docs/reference/#files-and-folders).
+
+## The former Pro package
+
+If `left-code.AlWasp.Pro` is installed, uninstall it and install `left-code.AlWasp`. All commands
+of the former Pro package are in `left-code.AlWasp`.

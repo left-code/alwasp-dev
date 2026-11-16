@@ -1,0 +1,26 @@
+---
+import BaseLayout from "@layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Search" description="Search the ALWasp documentation.">
+  <main class="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
+    <h1 class="text-4xl font-semibold tracking-tight text-ink-900">Search</h1>
+    <p class="mt-3 text-sm leading-6 text-ink-700">Search all documentation pages, the examples, and the cheatsheet. The search runs in your browser.</p>
+    <div id="search" class="mt-8"></div>
+    <noscript><p class="mt-6 text-sm text-ink-700">Search needs JavaScript. Use the <a class="font-semibold text-mint-700 underline" href="/docs/">documentation index</a> as an alternative.</p></noscript>
+  </main>
+
+  <link href="/pagefind/pagefind-ui.css" rel="stylesheet" />
+  <script is:inline src="/pagefind/pagefind-ui.js"></script>
+  <script is:inline>
+    window.addEventListener("DOMContentLoaded", () => {
+      if (typeof PagefindUI === "undefined") {
+        document.getElementById("search").textContent = "The search index is available only in the built site (npm run build, then npm run preview).";
+        return;
+      }
+      const ui = new PagefindUI({ element: "#search", showSubResults: true, showImages: false, autofocus: true });
+      const query = new URLSearchParams(location.search).get("q");
+      if (query) ui.triggerSearch(query);
+    });
+  </script>
+</BaseLayout>

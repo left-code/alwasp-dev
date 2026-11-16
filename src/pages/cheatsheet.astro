@@ -1,4 +1,5 @@
 ---
+import { documentedVersion } from "../lib/docs";
 import BaseLayout from "@layouts/BaseLayout.astro";
 
 const commandGroups = [
@@ -26,7 +27,7 @@ const commandGroups = [
       ["Build from plan", "alwasp build --plan .alwasp/alwasp-plan.json"],
       ["Clean build", "alwasp build ci --clean"],
       ["Direct project discovery", "alwasp build --project-root ./src"],
-      ["Next BC release", "alwasp build ci --bc-target next-major"]
+      ["Next BC release", "alwasp build ci --bc-version next-major"]
     ]
   },
   {
@@ -56,7 +57,7 @@ const commandGroups = [
       ["Prepare translation", "alwasp translation prepare fr-FR --context de-DE"],
       ["Validate returned XLIFF", "alwasp translation validate ./MyApp.fr-FR.xlf"],
       ["Compare packages", "alwasp compare old.app new.app --json out.json"],
-      ["BC target matrix", "alwasp validate compatibility --project-root ./src --bc-target current,next-minor,next-major --max-parallel-processing 2"],
+      ["BC target matrix", "alwasp validate compatibility --project-root ./src --bc-version current,next-minor,next-major --max-parallel-processing 2"],
       ["Structured output", "alwasp restore --format json"]
     ]
   }
@@ -71,7 +72,7 @@ const changeRefs = [
 ---
 
 <BaseLayout title="Cheatsheet" description="A compact visual reference for ALWasp commands, configuration, versioning, restore, compatibility, and CI workflows.">
-  <main class="pb-16">
+  <main class="pb-16" data-pagefind-body>
     <section class="relative overflow-hidden border-b border-ink-900 bg-ink-900 text-white">
       <div class="pointer-events-none absolute -right-24 -top-32 h-80 w-80 rounded-full border-[48px] border-wasp-300/15"></div>
       <div class="pointer-events-none absolute -bottom-24 left-1/3 h-48 w-48 rotate-12 rounded-[2.5rem] bg-mint-500/10"></div>
@@ -83,7 +84,7 @@ const changeRefs = [
           <div class="flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-wasp-300">
             <span>ALWasp field guide</span>
             <span class="h-px w-12 bg-wasp-300/60"></span>
-            <span class="text-ink-200">v0.5.10</span>
+            <span class="text-ink-200">v{documentedVersion}</span>
           </div>
           <h1 class="mt-5 text-4xl font-semibold tracking-tight sm:text-6xl">Build AL without breaking your flow.</h1>
           <p class="mt-5 max-w-3xl text-lg leading-8 text-ink-200">
@@ -291,7 +292,7 @@ const changeRefs = [
       </section>
 
       <div class="flex flex-col gap-3 border-t border-ink-200 pt-6 text-sm text-ink-500 sm:flex-row sm:items-center sm:justify-between">
-        <span>ALWasp cheatsheet · documentation for v0.5.10</span>
+        <span>ALWasp cheatsheet · documentation for v{documentedVersion}</span>
         <div class="flex gap-4 font-semibold">
           <a href="/docs/getting-started/" class="text-mint-700 hover:underline">Getting started</a>
           <a href="/examples/" class="text-mint-700 hover:underline">Examples</a>

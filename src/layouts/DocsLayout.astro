@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "./BaseLayout.astro";
 import DocsSidebar from "@components/DocsSidebar.astro";
-import { getCollection } from "astro:content";
+import { getSortedDocs } from "../lib/docs";
 
 interface Heading {
   depth: number;
@@ -17,11 +17,12 @@ interface Props {
 }
 
 const { title, description, slug, headings = [] } = Astro.props;
-const docs = (await getCollection("docs")).sort((a, b) => a.data.order - b.data.order);
+const docs = await getSortedDocs();
 const currentIndex = docs.findIndex((doc) => doc.id === slug);
 const previous = currentIndex > 0 ? docs[currentIndex - 1] : undefined;
 const next = currentIndex >= 0 && currentIndex < docs.length - 1 ? docs[currentIndex + 1] : undefined;
-const pageHeadings = headings.filter((heading) => heading.depth === 2);
+const pageHeadings = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
+const editUrl = slug ? `https://github.com/left-code/alwasp-dev/edit/main/src/content/docs/${slug}.md` : undefined;
 ---
 
 <BaseLayout title={title} description={description}>
@@ -30,7 +31,7 @@ const pageHeadings = headings.filter((heading) => heading.depth === 2);
       <div class="pointer-events-none absolute -right-20 -top-32 h-72 w-72 rounded-full bg-wasp-300/10 blur-3xl"></div>
       <div class="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
         <nav class="flex flex-wrap items-center gap-2 text-xs font-semibold text-ink-500" aria-label="Breadcrumb">
-          <a href="/" class="hover:text-white">Home</a><span aria-hidden="true">/</span><a href="/docs/configuration/" class="hover:text-white">Documentation</a><span aria-hidden="true">/</span><span class="text-wasp-300">{title}</span>
+          <a href="/" class="hover:text-white">Home</a><span aria-hidden="true">/</span><a href="/docs/" class="hover:text-white">Documentation</a><span aria-hidden="true">/</span><span class="text-wasp-300">{title}</span>
         </nav>
         <div class="mt-5 max-w-3xl">
           <p class="text-xs font-bold uppercase tracking-[0.18em] text-wasp-300">ALWasp guide</p>
@@ -44,9 +45,16 @@ const pageHeadings = headings.filter((heading) => heading.depth === 2);
       <DocsSidebar docs={docs} currentSlug={slug} />
 
       <div class="min-w-0">
-        <article class="doc-article min-w-0 rounded-xl border border-ink-200 bg-white p-6 shadow-sm sm:p-8 lg:p-10">
+        <article class="doc-article min-w-0 rounded-xl border border-ink-200 bg-white p-6 shadow-sm sm:p-8 lg:p-10" data-pagefind-body>
           <slot />
         </article>
+
+        {editUrl && (
+          <p class="mt-4 flex flex-wrap gap-x-5 gap-y-1 px-1 text-xs text-ink-500">
+            <a href={editUrl} target="_blank" rel="noreferrer" class="hover:text-mint-700 hover:underline">Edit this page on GitHub</a>
+            <a href="https://github.com/left-code/alwasp-dev/issues/new/choose" target="_blank" rel="noreferrer" class="hover:text-mint-700 hover:underline">Report a problem</a>
+          </p>
+        )}
 
         <nav class="mt-6 grid gap-4 sm:grid-cols-2" aria-label="Adjacent documentation">
           {previous ? (
@@ -66,11 +74,11 @@ const pageHeadings = headings.filter((heading) => heading.depth === 2);
 
       {pageHeadings.length > 0 && (
         <aside class="hidden xl:block">
-          <nav class="sticky top-24 border-l border-ink-200 pl-4" aria-label="On this page">
+          <nav class="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto border-l border-ink-200 pl-4" aria-label="On this page">
             <div class="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-ink-500">On this page</div>
             <ul class="space-y-2.5">
               {pageHeadings.map((heading) => (
-                <li><a href={`#${heading.slug}`} class="block text-xs leading-5 text-ink-700 transition hover:text-mint-700">{heading.text}</a></li>
+                <li class:list={[heading.depth === 3 && "pl-3"]}><a href={`#${heading.slug}`} class:list={["block text-xs leading-5 transition hover:text-mint-700", heading.depth === 3 ? "text-ink-500" : "text-ink-700"]}>{heading.text}</a></li>
               ))}
             </ul>
           </nav>
@@ -78,6 +86,30 @@ const pageHeadings = headings.filter((heading) => heading.depth === 2);
       )}
     </div>
   </main>
+
+  <script>
+    // Add a copy button to each code block in the article.
+    for (const pre of document.querySelectorAll<HTMLPreElement>(".prose-docs pre")) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "copy-code";
+      button.textContent = "Copy";
+      button.setAttribute("aria-label", "Copy code to clipboard");
+      button.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(pre.querySelector("code")?.innerText ?? pre.innerText);
+          button.textContent = "Copied";
+        } catch {
+          button.textContent = "Failed";
+        }
+        setTimeout(() => (button.textContent = "Copy"), 1600);
+      });
+      const wrapper = document.createElement("div");
+      wrapper.className = "code-block";
+      pre.replaceWith(wrapper);
+      wrapper.append(pre, button);
+    }
+  </script>
 
   <style>
     .docs-grid {

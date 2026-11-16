@@ -1,30 +1,28 @@
 ---
-import type { CollectionEntry } from "astro:content";
+import { groupDocs, type DocEntry } from "../lib/docs";
 
 interface Props {
-  docs: CollectionEntry<"docs">[];
+  docs: DocEntry[];
   currentSlug?: string;
 }
 
 const { docs, currentSlug } = Astro.props;
-const sortedDocs = [...docs].sort((a, b) => a.data.order - b.data.order);
-const essentials = sortedDocs.filter((doc) => doc.data.order <= 5);
-const reference = sortedDocs.filter((doc) => doc.data.order > 5);
-
-const groups = [
-  { title: "Learn", docs: essentials },
-  { title: "Reference", docs: reference }
-];
+const groups = groupDocs(docs);
 ---
 
 <div>
   <details class="rounded-xl border border-ink-200 bg-white p-2 shadow-sm lg:hidden">
     <summary class="cursor-pointer list-none rounded-md px-3 py-2 text-sm font-semibold text-ink-900 marker:content-none">Browse documentation <span class="float-right text-ink-500">↓</span></summary>
     <nav class="mt-2 border-t border-ink-200 pt-2" aria-label="Documentation navigation">
-      {sortedDocs.map((doc) => {
-        const active = doc.id === currentSlug;
-        return <a href={`/docs/${doc.id}/`} aria-current={active ? "page" : undefined} class:list={["block rounded-md px-3 py-2 text-sm", active ? "bg-wasp-100 font-semibold text-ink-900" : "text-ink-700 hover:bg-ink-100"]}>{doc.data.title}</a>;
-      })}
+      {groups.map((group) => (
+        <div class="mb-2">
+          <div class="px-3 pb-1 pt-2 text-[11px] font-bold uppercase tracking-[0.16em] text-ink-500">{group.title}</div>
+          {group.docs.map((doc) => {
+            const active = doc.id === currentSlug;
+            return <a href={`/docs/${doc.id}/`} aria-current={active ? "page" : undefined} class:list={["block rounded-md px-3 py-2 text-sm", active ? "bg-wasp-100 font-semibold text-ink-900" : "text-ink-700 hover:bg-ink-100"]}>{doc.data.title}</a>;
+          })}
+        </div>
+      ))}
     </nav>
   </details>
 

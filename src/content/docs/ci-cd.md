@@ -1,7 +1,8 @@
 ---
 title: CI/CD
 description: GitHub Actions and Azure Pipelines patterns for private feeds, manifests, diagnostics, and version application.
-order: 9
+group: Guides
+order: 20
 ---
 
 # CI/CD
@@ -41,14 +42,20 @@ jobs:
       - name: Build
         env:
           ALWASP_PAT: ${{ secrets.AZURE_ARTIFACTS_PAT }}
-        run: alwasp build ci --auth-mode noninteractive --manifest output/build-manifest.json
+        run: alwasp build ci --auth-mode noninteractive --manifest .alwasp/build-manifest.json
 
       - name: Upload manifest
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-manifest
-          path: output/build-manifest.json
+          path: .alwasp/build-manifest.json
 ```
+
+A manifest path in `alwasp.json` (`profile.manifest` or `workspace.manifest`) has priority over
+`--manifest`. `alwasp config init` writes `workspace.manifest: ".alwasp/build-manifest.json"`, so
+this example uses the same path. If you change the path in `alwasp.json`, change the upload step
+too.
 
 ## Azure Pipelines
 
@@ -74,11 +81,11 @@ steps:
       alwasp build ci \
         --auth-mode noninteractive \
         --pat $(System.AccessToken) \
-        --manifest output/build-manifest.json
+        --manifest .alwasp/build-manifest.json
     displayName: Build AL apps
 ```
 
-## Symbol-package publication
+## Package publication
 
 Keep publishing separate from compilation. A build job can prepare packages without feed
 credentials, then upload the `.nupkg` files as pipeline artifacts:
@@ -104,8 +111,11 @@ In a protected release job, download those artifacts, install ALWasp, and push e
 
 Packing and pushing also require ALTool for symbol-only/runtime validation; pre-cache compatible
 tools with `alwasp tools update` when needed. `symbols publish` combines all three stages when
-one job owns the complete workflow. `build` never publishes implicitly. See
+one job owns the complete workflow. `build` never publishes. See
 [Symbol Packages](/docs/symbol-packages/) for dependency ID mappings, validation, and stage results.
+
+To put the deployable `.app` on a feed for a deployment pipeline, use `alwasp app pack`, `push`,
+or `publish` in the same way. See [App Packages](/docs/app-packages/).
 
 ## Change detection
 
@@ -129,43 +139,37 @@ ALWasp does not fetch refs or history. Make sure your pipeline checks out the ta
 
 ## Deterministic CI plans
 
-`build --changed-since` still builds the full selected target; use `plan` for an explicit
-changed-only CI selection instead:
+`build --changed-since` builds the complete target. To build only what a change makes necessary,
+use a plan:
 
 ```bash
 alwasp plan ci --changed-since origin/main --plan-file .alwasp/alwasp-plan.json
 alwasp build --plan .alwasp/alwasp-plan.json
 ```
 
-`alwasp plan` writes a deterministic, timestamp-free JSON document selecting directly changed
-projects, downstream applications, affected test apps, and the internal prerequisites needed to
-compile them, along with dependency build levels, deployment order, repository commit IDs,
-changed-file hashes, the configuration hash, and an input fingerprint. A change to `alwasp.json`,
-a configured NuGet config, or an active ruleset selects the complete requested target; no relevant
-changes produce a successful empty plan; dependency cycles fail plan creation.
+The plan file records the selection and the state of the repository. `build --plan` and
+`check --plan` fail when the repository no longer agrees with the plan, so a plan from one job
+cannot build the wrong projects in a later job. See
+[Plan-based builds](/docs/build/#plan-based-builds) for the contents and rules.
 
-`alwasp build --plan <path>` consumes that plan and fails closed if the schema, fingerprint,
-configuration, repository HEAD, changed-file set/content, or planned profiles/project App IDs have
-drifted since the plan was created — so a stale plan can never silently build the wrong thing. It
-cannot be combined with a positional target or `--profile`. `--changed-since` is allowed only for
-the consuming build's changed-only version calculation and must resolve to the plan's recorded base.
+## Paths to cache and collect
 
-## Default output paths and diagnostics
+| Path | Contents | In CI |
+|---|---|---|
+| `~/.alwasp/tools` | Downloaded AL compiler | Cache |
+| `~/.alwasp/artifacts` | Business Central artifacts, approximately 1 GB each | Cache when you use `--bc-version` |
+| `~/.alwasp/state` | Artifact symbol caches and default compiler logs | Cache; collect logs from the paths that the build reports |
+| `.alwasp/alwasp-plan.json` | Default plan file | Pass between jobs |
+| `.alwasp/build-manifest.json` | Default manifest for `--manifest` without a path | Upload as an artifact |
 
-Since 0.5.10, compiler logs and artifact symbol caches use per-user state outside the repository.
-Pipelines that cached `.alwasp-bc` should cache `~/.alwasp/state` instead. Artifact cache keys
-depend on the full packages-folder path, so use a stable checkout path for reuse. Collect compiler
-logs from the reported paths, or set `workspace.logDirectory` / `--log-directory` explicitly.
-An older generated `workspace.logDirectory: ".alwasp/logs"` keeps writing there until removed.
-
-Since 0.4.1, plans default to `.alwasp/alwasp-plan.json` and `--manifest` without a path uses
-`.alwasp/build-manifest.json`. Update artifact upload paths when relying on these defaults.
-Explicit paths such as `output/build-manifest.json` in the examples above remain unchanged.
+State folders are keyed by the full path of the packages folder. Use a stable checkout path so
+that a cache from an earlier run is found. To get compiler logs in a known folder, set
+`workspace.logDirectory` or `--log-directory`.
 
 On failure, human logs can end with a `Failure artifacts` section pointing to available logs,
 manifests, or translation coverage reports. The section does not become a JSON/NDJSON record.
 CI and redirected output remain plain even when `ALWASP_HYPERLINKS=always` is set; interactive
-local runs can use clickable paths. See [CLI output controls](/docs/cli-reference/#terminal-links-and-failure-artifacts).
+local runs can use clickable paths. See [CLI output controls](/docs/structured-output/#clickable-paths-and-failure-artifacts).
 
 ## Permanent version updates
 
@@ -180,9 +184,7 @@ ALWasp writes the calculated project versions and eligible internal dependency v
 
 `version resolve` previews the changes without applying them. Without configuration, use
 `--project-root ./src --changed-since origin/main`, with optional `--include-dependents` and
-`--release-type`. For compatibility target/country matrices, Insider failures warn when `current`
-is included; add `--fail-on-next` when previews must block CI. Use `--max-parallel-processing`
-to bound workers and `--keep-artifacts` when the next run should reuse Insider artifacts.
+`--release-type`.
 
 With `versioning.includeDependencies: true` (the default), dependencies on selected internal projects are updated by app GUID. The default `dependencyUpdateScope: directlyChanged` propagates only versions of projects changed directly in git; use `allVersioned` when versions assigned to dependents should cascade through the whole selected graph.
 
@@ -209,6 +211,12 @@ Keep build, AppSourceCop validation, and compiled-package comparison as explicit
           ./output/MyApp.app
           --json ./output/compare.json
 ```
+
+To validate the range that AppSource validates, add `--bc-version minimum,current,next-minor`.
+Insider failures are warnings when `current` is in the list; add `--fail-on-next` when they must
+stop the pipeline. Use `--max-parallel-processing` to limit the workers and `--keep-artifacts`
+when the next run must use the same Insider artifacts again. See
+[Compatibility](/docs/compatibility/#validate-multiple-versions-and-countries).
 
 The validation stage recompiles source and is the compatibility gate. The compare stage reads
 already-built packages and reports an informational change log — it always exits `0` on a
@@ -242,6 +250,6 @@ alwasp check --plan .alwasp/alwasp-plan.json
 ```
 
 Archive the result file and reported failure artifacts. Check compiles test apps but does not run
-Business Central tests. Standalone compatibility changed-only validation now needs
-`--include-dependents` to include downstream apps; `check` and `plan` retain their existing
-dependent/test/prerequisite selection.
+Business Central tests. `check` and `plan` select changed projects, their dependents, affected
+test apps, and compile prerequisites. Standalone `validate compatibility --changed-since`
+validates only the changed apps unless you add `--include-dependents`.

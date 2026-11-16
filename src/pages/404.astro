@@ -1,0 +1,15 @@
+---
+import BaseLayout from "@layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Page not found" description="This page does not exist.">
+  <main class="mx-auto max-w-2xl px-4 py-20 text-center sm:px-6" data-pagefind-ignore>
+    <p class="text-xs font-bold uppercase tracking-[0.18em] text-mint-700">404</p>
+    <h1 class="mt-3 text-4xl font-semibold tracking-tight text-ink-900">Page not found</h1>
+    <p class="mt-4 text-base leading-7 text-ink-700">The page was moved or does not exist. Use the documentation index or the search.</p>
+    <div class="mt-8 flex flex-wrap justify-center gap-3">
+      <a href="/docs/" class="rounded-md bg-wasp-300 px-5 py-3 text-sm font-bold text-ink-900 transition hover:bg-wasp-100">Documentation index</a>
+      <a href="/search/" class="rounded-md border border-ink-200 bg-white px-5 py-3 text-sm font-semibold text-ink-900 transition hover:bg-ink-100">Search</a>
+    </div>
+  </main>
+</BaseLayout>

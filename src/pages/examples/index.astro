@@ -13,8 +13,7 @@ const configExample = `{
   "restore": {
     "enabled": true,
     "mode": "Locked",
-    "packagesFolder": ".alpackages",
-    "country": "W1"
+    "packagesFolder": ".alpackages"
   },
   "workspace": {
     "manifest": ".alwasp/build-manifest.json",
@@ -54,6 +53,7 @@ const configExample = `{
     }
   },
   "targets": {
+    "release": ["appsource"],
     "ci": ["appsource", "test"]
   }
 }`;
@@ -81,14 +81,15 @@ jobs:
       - run: alwasp config validate
       - run: alwasp tools update --check
         continue-on-error: true
-      - run: alwasp build ci --auth-mode noninteractive --manifest output/build-manifest.json
+      - run: alwasp build ci --auth-mode noninteractive --manifest .alwasp/build-manifest.json
         env:
           ALWASP_PAT: \${{ secrets.AZURE_ARTIFACTS_PAT }}
 
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: build-manifest
-          path: output/build-manifest.json`;
+          path: .alwasp/build-manifest.json`;
 
 const privateFeed = `export MY_FEED_PAT="$TOKEN"
 alwasp restore \\
@@ -123,6 +124,39 @@ alwasp compare \\
   ./output/MyApp.app \\
   --json ./output/compare.json`;
 
+const appSourceRange = `# The range that AppSource validates: each app's lowest
+# supported release, the latest release, and the next minor.
+alwasp validate compatibility \\
+  --project-root ./src \\
+  --get-baseline-symbols \\
+  --bc-version minimum,current,next-minor \\
+  --bc-country de,us \\
+  --max-parallel-processing 2`;
+
+const unifiedCheck = `alwasp check ci \\
+  --auth-mode noninteractive \\
+  --format json \\
+  --result-file .alwasp/check-result.json`;
+
+const planBuild = `# Job 1: select only what the change makes necessary
+alwasp plan ci --changed-since origin/main
+
+# Job 2: build and verify exactly that selection
+alwasp build --plan .alwasp/alwasp-plan.json
+alwasp check --plan .alwasp/alwasp-plan.json`;
+
+const publishPackages = `FEED=https://pkgs.dev.azure.com/org/_packaging/feed/nuget/v3/index.json
+
+# Symbols, for repositories that compile against the app
+alwasp symbols publish ./output/appsource/MyApp.app \\
+  --source "$FEED" --api-key az --skip-duplicate \\
+  --auth-mode noninteractive
+
+# The deployable app, for a deployment pipeline
+alwasp app publish ./output/appsource/MyApp.app \\
+  --source "$FEED" --api-key az --skip-duplicate \\
+  --auth-mode noninteractive`;
+
 const translationGate = `alwasp validate translations ci \\
   --changed-since latest \\
   --fail-on needs-review \\
@@ -130,8 +164,8 @@ const translationGate = `alwasp validate translations ci \\
   --json output/translations.json`;
 ---
 
-<BaseLayout title="Examples" description="Copy-ready ALWasp examples for configuration, GitHub Actions, private feeds, versioning, package re-upload, compatibility, and translation gates.">
-  <main>
+<BaseLayout title="Examples" description="Copy-ready ALWasp examples for configuration, GitHub Actions, private feeds, versioning, plans, package publication, compatibility, and translation gates.">
+  <main data-pagefind-body>
     <section class="examples-grid relative isolate overflow-hidden border-b border-ink-900 bg-ink-900 text-white">
       <div class="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-mint-500/15 blur-3xl"></div>
       <div class="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 sm:py-18 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end lg:px-8 lg:py-20">
@@ -162,12 +196,14 @@ const translationGate = `alwasp validate translations ci \\
         <a href="#feeds" class="shrink-0 rounded-md px-3 py-2 text-sm font-semibold text-ink-700 hover:bg-ink-100">Private feeds</a>
         <a href="#versioning" class="shrink-0 rounded-md px-3 py-2 text-sm font-semibold text-ink-700 hover:bg-ink-100">Versioning</a>
         <a href="#release" class="shrink-0 rounded-md px-3 py-2 text-sm font-semibold text-ink-700 hover:bg-ink-100">Compatibility</a>
+        <a href="#plan" class="shrink-0 rounded-md px-3 py-2 text-sm font-semibold text-ink-700 hover:bg-ink-100">Plans</a>
+        <a href="#publish" class="shrink-0 rounded-md px-3 py-2 text-sm font-semibold text-ink-700 hover:bg-ink-100">Publish packages</a>
       </div>
     </nav>
 
     <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
       <div class="mb-8 max-w-2xl">
-        <p class="text-xs font-bold uppercase tracking-[0.18em] text-wasp-700">Eight practical recipes</p>
+        <p class="text-xs font-bold uppercase tracking-[0.18em] text-wasp-700">Twelve practical recipes</p>
         <h2 class="mt-2 text-3xl font-semibold tracking-tight text-ink-900">From repository setup to release confidence.</h2>
         <p class="mt-3 text-base leading-7 text-ink-700">Each example stays close to the current CLI and schema, so you can copy it first and refine it for your repository second.</p>
       </div>
@@ -180,6 +216,10 @@ const translationGate = `alwasp validate translations ci \\
         <CodePanel id="versioning" eyebrow="Release preparation" title="Apply versions permanently" description="Calculate project and internal dependency versions before the surrounding pipeline commits and tags them." filename="release.sh" code={versionApply} tone="wasp" />
         <CodePanel eyebrow="Sandbox workflow" title="Re-upload a compiled artifact" description="Assign a fresh deployment package ID without changing app identity or the rest of the ZIP payload." filename="reupload.ps1" code={sandboxArtifact} tone="mint" />
         <CodePanel id="release" eyebrow="Quality gate" title="Multi-app compatibility" description="Recompile current source against previous packages, then read the informational public-symbol change log." filename="compatibility.sh" code={compatibilityGate} tone="ink" />
+        <CodePanel eyebrow="Quality gate" title="AppSource version range" description="Validate each app at its lowest supported release, the latest release, and the next minor, for two countries." filename="appsource-range.sh" code={appSourceRange} tone="mint" />
+        <CodePanel eyebrow="Quality gate" title="One verification command" description="Run configuration, restore, build, compatibility, and translation gates on one selection, with a result file for the pipeline." filename="check.sh" code={unifiedCheck} tone="ink" />
+        <CodePanel id="plan" eyebrow="Automation" title="Changed-only pipeline with a plan" description="Create the selection one time, then build and verify the same projects in later jobs. A stale plan fails." filename="plan.sh" code={planBuild} tone="wasp" />
+        <CodePanel id="publish" eyebrow="Release" title="Publish symbol and app packages" description="Put the symbols and the deployable app on a NuGet feed. The token comes from ALWASP_PAT in the job's secret environment." filename="publish.sh" code={publishPackages} tone="mint" />
         <CodePanel eyebrow="Quality gate" title="Translation coverage gate" description="Check only changed projects' XLIFF coverage before a release, with a per-language minimum and build annotations." filename="translations.sh" code={translationGate} tone="wasp" />
       </div>
 

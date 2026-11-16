@@ -1,7 +1,8 @@
 ---
 title: Compatibility
 description: Compare compiled AL packages or validate current source against previous packages with AppSourceCop.
-order: 5
+group: Guides
+order: 13
 ---
 
 # Compatibility
@@ -48,10 +49,59 @@ ALWasp temporarily supplies AppSourceCop's baseline identity and cache propertie
 
 `--ruleset` is resolved from the current directory and overrides configured rulesets. In direct mode, omitting it auto-detects `ruleset.json`, then the first `*.ruleset.json` in the project directory.
 
-Use `--bc-target current|next-minor|next-major` to choose the Business Central release used for
-validation, `--bc-version` to pin a concrete release, and `--bc-country` to select localized
-artifacts (default `W1`). ALWasp downloads and caches the matching platform, application symbols,
-and compiler. The same artifact workflow is available separately through `alwasp artifacts download`.
+## Minimum supported release
+
+Without `--bc-version`, or with `--bc-version minimum`, each app is compiled against the Microsoft
+symbols of the **lowest release that it can be installed on**. AppSource starts its validation at
+that release.
+
+This finds a problem that a build against the latest release hides. Example: an app declares
+`application` `27.0.0.0` and calls a method that is public in 27.5 but `internal` in 27.0. The
+normal build passes. AppSource rejects the app with `AL0161 ... is inaccessible due to its
+protection level`. This validation fails in the same way.
+
+How the minimum is found:
+
+- It starts at the `application` and `platform` values in the app's `app.json`.
+- It is raised to the release that the app's dependencies need, because an app cannot be installed
+  below that release. This includes Microsoft dependencies, partner packages, and other apps of the
+  repository, also indirect ones.
+- Each app gets its own Microsoft symbols. Newer symbols in `.alpackages`, or symbols that a
+  different app of the same run needed, are not used.
+
+| Situation | Result |
+|---|---|
+| A dependency needs a newer release than the app declares | **Warning.** The app is validated at the newer release. The run does not fail |
+| The app's own Microsoft dependency needs a later major.minor than `application`, for example `application` `27.0.0.0` with `Subscription Billing` `28.0.0.0` | **Error.** AppSource cannot resolve this dependency. The app is compiled, so that its other findings and its dependents are reported, and then it fails |
+| The dependency version differs only in build or revision | Warning |
+
+At the end of the run, a table lists all apps with a minimum that is too low: the app, the
+declared and the necessary `application` and `platform`, and the dependency that needs it. Use the
+table to correct the `app.json` files. The same rows are in the result data as
+`understatedMinimums`.
+
+`--project` mode works on a temporary copy of the packages folder. The `.alpackages` folder that
+the AL extension uses is not changed.
+
+AppSource validates from the minimum up to the latest release. To do the same in one run:
+
+```bash
+alwasp validate compatibility --project-root . --get-baseline-symbols \
+  --bc-version minimum,current,next-minor
+```
+
+## Select the Business Central version
+
+| `--bc-version` | Microsoft symbols and compiler |
+|---|---|
+| Not given, or `minimum` | NuGet symbols of each app's minimum supported release |
+| `current` | The latest released artifact |
+| `next-minor`, `next-major` | The Insider artifact |
+| A version such as `28.3.12345.0` | That artifact |
+
+`--bc-country` selects the localization (default `W1`; in configured mode `restore.country`
+first). See [Business Central Versions](/docs/bc-version/) for all rules. You can download an
+artifact ahead of a run with `alwasp artifacts download`.
 
 ## Validate a dynamic multi-app repository
 
@@ -104,6 +154,21 @@ alwasp validate compatibility `
 
 The final summary separates baseline compatibility verdicts, current-source validation, prepared local dependencies, failed apps/dependencies, and total processing time. Source or analyzer failures fail the command even when compatibility is N/A.
 
+### Why apps failed
+
+When an app fails, the summary gives the reason, so that you do not have to search a long log.
+Under `Why apps failed`, each failed app is listed with the Microsoft symbols it was compiled
+against and its first five compiler or AppSourceCop errors, or the `app.json` problem:
+
+```text
+Why apps failed (first errors; the full compiler output is above):
+  My App (Microsoft symbols: minimum release, application 27.0.0.0)
+    src/MyTableExt.TableExt.al(416,32): error AL0161: 'SetCustomerContractNo(Code[20])' is inaccessible due to its protection level
+```
+
+The result data has the same information as `failureReasons` (`app`, `name`, `symbols`, `errors`,
+`errorCount`). `check` prints the list in its overview.
+
 ### Select specific apps
 
 Repeat `--app` to select validation roots by app name, app GUID, or project path relative to
@@ -151,7 +216,7 @@ removed after the run. Apps without a published stable baseline are source-valid
 AppSourceCop and report
 compatibility N/A. An all-unpublished selection succeeds if its source checks pass; feed/download
 errors still fail and are never treated as unpublished apps. Baseline versions are independent of the
-current app version and `--bc-target`.
+current app version and `--bc-version`.
 
 When the current directory contains `app.json`, `--get-baseline-symbols` defaults the project root
 to that directory and also discovers nested projects. Otherwise, pass `--project-root`. The option
@@ -197,7 +262,7 @@ alwasp validate compatibility release
 alwasp validate compatibility --profile appsource
 ```
 
-Compatibility validation enables AppSourceCop when an app has a baseline; source-only checks use the configured non-baseline analyzers. By default it remains separate from `alwasp build`, so running both stages intentionally compiles the source twice — unless the profile opts into build-integrated validation, below.
+Compatibility validation enables AppSourceCop when an app has a baseline; source-only checks use the configured non-baseline analyzers. It is separate from `alwasp build`, so the two commands together compile the source two times.
 
 `validate compatibility` temporarily applies the effective build-time `applicationInsights`
 setting to each selected project's `app.json` before compiling, and restores the original file
@@ -207,8 +272,7 @@ intentionally injected by the build.
 
 ## Profile-bound baseline validation
 
-A profile can fold compatibility validation directly into its normal `alwasp build`, so the build
-output *is* the compatibility-validated artifact instead of a separate, duplicate compile:
+A profile can run the baseline check during its normal `alwasp build`:
 
 ```json
 {
@@ -235,19 +299,22 @@ alwasp build release
 
 With `compatibility.enabled: true`, apps in the profile's selection that declare
 `compatibility.baseline` are compiled once with AppSourceCop bound to that baseline, and the
-successful package is collected through the profile's ordinary `outFolder`/`outputSuffix` flow —
-eliminating the `validate compatibility` followed by `build` loop. Selected apps without a
+successful package is collected through the profile's ordinary `outFolder`/`outputSuffix` flow.
+Selected apps without a
 baseline are compiled normally, not skipped. Compatibility is scoped to the profile: other
 profiles keep their configured `appSourceCop` setting and are never implicitly baseline-checked.
 Historical dependencies use an isolated temporary cache, and a user-owned `AppSourceCop.json` is
 restored byte-for-byte after every compile group.
 
-Use the standalone `alwasp validate compatibility [targetOrProfile]` command instead when
-compatibility must be checked independently of — or more often than — the build itself.
+This build check finds breaking changes against the baseline with the symbols of the build. It
+does **not** compile each app at its [minimum supported release](#minimum-supported-release).
+Only `validate compatibility` and `check` do that, so keep one of them in your release pipeline.
 
 ## Microsoft symbol cache safety
 
-When a symbols feed lags behind a preview or artifact-provided Business Central version, ALWasp may resolve an older fallback package from the feed. A newer compatible Microsoft `.app` already staged in the package cache is retained; the older feed fallback cannot downgrade it. Equal or genuinely newer resolved packages can still replace cached entries when canonical/localized package selection requires it.
+With an artifact (`--bc-version current`, an Insider lane, or a version), the Microsoft symbols
+of the artifact stay in the validation cache. If a symbols feed has only an older package, that
+package cannot replace the newer artifact symbols.
 
 If a direct dependency allows an older package but a transitive dependency requires a newer one,
 ALWasp resolves the package again at the stricter minimum. Repeated AppIds are skipped only when
@@ -294,40 +361,45 @@ With changed-only validation, baseline downloads and warnings are limited to val
 The summary names changed apps and, when requested, their validated dependents.
 
 Structured results add `projectClassifications`, `skippedTestProjects`, `skippedTests`,
-`sourceValidatedProjects`, `sourceFailedProjects`, `sourceValidated`, and
-`compatibilityNotApplicable`. `newAppsSkipped` is removed. `notApplicable` is true only when
+`sourceValidatedProjects`, `sourceFailedProjects`, `sourceValidated`,
+`compatibilityNotApplicable`, `understatedMinimums`, and `failureReasons`. `notApplicable` is true only when
 nothing was validated. An all-unpublished `check` compatibility step passes after successful
 source validation, while baseline compatibility is N/A.
 
 <a id="validate-multiple-countries"></a>
 
-## Validate multiple targets and countries
+## Validate multiple versions and countries
+
+`--bc-version` and `--bc-country` accept comma-separated lists. A version list can mix names and
+builds, for example `28.3.12345.0,next-major`.
 
 ```bash
 alwasp validate compatibility --project-root ./src --get-baseline-symbols \
-  --bc-target current,next-minor,next-major --bc-country de,us,w1 \
+  --bc-version minimum,current,next-minor --bc-country de,us,w1 \
   --max-parallel-processing 2
 ```
 
-Target and country lists are trimmed, case-insensitive, and deduplicated in first-seen order.
-Target lists cannot be combined with `--bc-version`; empty target entries fail. Each combination
-has its own source copy, package cache, and matching compiler/analyzers. Apps compile in dependency
-order within a combination; `current` uses NuGet tools and symbols. Baselines download once and
-are shared read-only. Summaries report every combination in target order, then country order;
-live progress identifies each started app, for example `[next-minor/US] Validating ...`.
+- Lists are not case-sensitive. Duplicates are removed. An empty entry fails.
+- Each version and country combination runs separately, with its own source copy, package cache,
+  compiler, and analyzers. Apps in one combination compile in dependency order.
+- Baselines are downloaded one time and shared.
+- The summary shows the combinations in the sequence that you gave. Progress lines name the
+  combination, for example `[next-minor/US] Validating ...`.
+- By default all combinations run at the same time, limited to half of the logical processors.
+  `--max-parallel-processing <N>` sets the limit; `1` runs them one after the other.
 
-`--max-parallel-processing` must be positive. By default all combinations run concurrently, capped
-at half the logical processors (at least one); `1` runs sequentially. It replaces
-`--max-parallel-countries`, whose default was `2`; update existing scripts.
+Which failures fail the run:
 
-When the targets include `current`, failures on `next-minor` or `next-major` are warnings and do
-not fail the command. Current failures remain fatal. Add `--fail-on-next` to make all failures
-fatal. Runs without `current` fail on any combination failure.
+| Combination | Result of a failure |
+|---|---|
+| `minimum`, `current`, or a pinned version | Always fails the run |
+| `next-minor` or `next-major`, and the list includes `current` | Warning. Add `--fail-on-next` to fail the run |
+| `next-minor` or `next-major`, and the list does not include `current` | Fails the run |
 
-Multi-combination structured results include `bcTargets`, `bcCountries`, `maxParallelProcessing`,
-`failOnNext`, `failedCells`, `warningCells`, `failedCountries`, and `countries`. Each `countries`
-entry includes `target` and `failurePolicy` (`fail` or `warn`); a warning cell still has failed
-status. `maxParallelCountries` is replaced by `maxParallelProcessing`.
+Structured results for more than one combination include `bcTargets`, `bcCountries`,
+`maxParallelProcessing`, `failOnNext`, `failedCells`, `warningCells`, `failedCountries`, and
+`countries`. Each `countries` entry includes `target`, `failurePolicy` (`fail` or `warn`), and
+`toolchain`. A combination with a warning has the status failed.
 
 ### Cross-country Microsoft dependencies
 
@@ -341,8 +413,9 @@ If no country supplies the app, a warning identifies it before the compiler repo
 
 ### Artifact cache cleanup
 
-After compatibility validation using pinned or Insider artifacts, ALWasp cleans
-`~/.alwasp/artifacts`. It removes Insider artifacts, builds superseded by a newer cached build
+Each artifact uses approximately 1 GB in `~/.alwasp/artifacts`, and a new Insider build is
+published almost daily. After a compatibility validation that used an artifact, ALWasp cleans
+that folder. It removes Insider artifacts, builds superseded by a newer cached build
 of the same major/minor and country once unused for a day, and artifacts unused for 14 days.
 Artifacts another process is using are retained. Temporary run directories left by interrupted
 runs are removed once a day old. Structured results include `artifactCleanup` when cleanup runs.

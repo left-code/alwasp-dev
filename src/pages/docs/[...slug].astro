@@ -4,7 +4,7 @@ import DocsLayout from "@layouts/DocsLayout.astro";
 
 export async function getStaticPaths() {
   const docs = await getCollection("docs");
-  return docs.filter((doc) => doc.id !== "getting-started").map((doc) => ({
+  return docs.map((doc) => ({
     params: { slug: doc.id },
     props: { doc }
   }));
