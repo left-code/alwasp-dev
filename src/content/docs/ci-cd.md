@@ -42,14 +42,20 @@ jobs:
       - name: Build
         env:
           ALWASP_PAT: ${{ secrets.AZURE_ARTIFACTS_PAT }}
-        run: alwasp build ci --auth-mode noninteractive --manifest output/build-manifest.json
+        run: alwasp build ci --auth-mode noninteractive --manifest .alwasp/build-manifest.json
 
       - name: Upload manifest
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-manifest
-          path: output/build-manifest.json
+          path: .alwasp/build-manifest.json
 ```
+
+A manifest path in `alwasp.json` (`profile.manifest` or `workspace.manifest`) has priority over
+`--manifest`. `alwasp config init` writes `workspace.manifest: ".alwasp/build-manifest.json"`, so
+this example uses the same path. If you change the path in `alwasp.json`, change the upload step
+too.
 
 ## Azure Pipelines
 
@@ -75,7 +81,7 @@ steps:
       alwasp build ci \
         --auth-mode noninteractive \
         --pat $(System.AccessToken) \
-        --manifest output/build-manifest.json
+        --manifest .alwasp/build-manifest.json
     displayName: Build AL apps
 ```
 
