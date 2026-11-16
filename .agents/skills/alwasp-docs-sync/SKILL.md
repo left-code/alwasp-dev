@@ -25,6 +25,12 @@ Public documentation:
 
 When both repositories are available locally, prefer the local repositories and Git history.
 
+A local clone can be without tags. Fetch them before you determine the range:
+
+```bash
+git -C ../alwasp fetch origin --tags
+```
+
 Otherwise, use GitHub access to inspect `left-code/alwasp`.
 
 ## Determine the synchronization range
@@ -47,6 +53,23 @@ Never document `CHANGELOG.md` entries under `Unreleased` as part of a released d
 
 If no release exists after `DOCUMENTED_VERSION`, report that the documentation is already synchronized and do not change versions.
 
+Confirm that `TARGET_TAG` is a published release before you document it: the version must be in
+the version list of the `left-code.AlWasp` package on NuGet.org. A tag without a published package
+is not a release for this site.
+
+## Synchronize everything together
+
+One synchronization changes all of these in the same commit, for the same `TARGET_TAG`:
+
+- the documentation pages and the release notes
+- `public/schema/alwasp.schema.json`
+- the visual CLI reference (`scripts/cli-reference/help.json` and the generated HTML)
+- the version in `package.json` and `package-lock.json`
+
+Never copy the schema, or regenerate the CLI reference, without the page changes for the same
+releases. A schema-only synchronization makes the site look current while its pages describe an
+older version. If you cannot complete the pages, change nothing and report what is missing.
+
 ## Inspect the actual product changes
 
 Do not derive documentation only from commit messages or `CHANGELOG.md`.
@@ -55,6 +78,10 @@ Use these sources together:
 
 - Git diff between the baseline tag and target release tag
 - `CHANGELOG.md`
+- the product's own user documentation at `TARGET_TAG`: `README.md` and `docs/*.md` (for example
+  `docs/app-packages.md`, `docs/translation-skill.md`, `docs/cli-reference.md`). These describe
+  user-facing behavior in full sentences and are the best source for new pages. Do not copy
+  internal documents (`docs/adr/`, migration maps, audits, release operations).
 - changed CLI command modules
 - changed command handlers
 - changed models and configuration structures
@@ -136,6 +163,10 @@ Release notes must describe user-visible behavior, not implementation details.
 
 Do not copy the complete internal changelog verbatim.
 
+Start an entry with **Migration:** when users must change a script, a configuration file, or a
+pipeline, and with **Behavior change:** when a command that they do not change gives a different
+result. The release notes page tells readers to look for these two markers.
+
 ## Schema synchronization
 
 Compare the canonical schema from:
@@ -155,6 +186,12 @@ Copy the canonical schema when it changed.
 Do not manually reconstruct the schema.
 
 If other public schemas are added to ALWasp and are intended for publication, inspect the existing site architecture before adding them.
+
+## License text
+
+Compare `LICENSE.txt` of the tool at `TARGET_TAG` with the agreement text in
+`src/content/docs/license.md`. When it changed, replace the text in the code block and update the
+summary table above it.
 
 ## Examples and paths
 
@@ -230,7 +267,16 @@ npm ci
 npm run build
 ```
 
-The build must succeed.
+The build must succeed. It runs `scripts/check-docs.mjs`, which fails when:
+
+- a page names a `--option` that is not in the `TARGET_TAG` help snapshots
+  (`scripts/cli-reference/help.json`). `release-notes.md` is excluded, because it describes
+  earlier versions.
+- an internal link or anchor in the built site does not resolve.
+
+Do not add an option to the script's allowlist to make the check pass, unless the option belongs
+to a different tool (`dotnet`, `git`). Correct the page. `npm run check:docs` runs the check
+again on an existing `dist/`.
 
 Also verify:
 
@@ -238,7 +284,8 @@ Also verify:
 2. The version equals `TARGET_VERSION`.
 3. Public schema matches the canonical ALWasp schema at `TARGET_TAG`.
 4. No documentation claims behavior that exists only after `TARGET_TAG`.
-5. CLI examples use commands and options present in the target release.
+5. CLI examples use commands and options present in the target release. The build check covers
+   option names; examine values, defaults, and combinations yourself.
 6. Default paths and filenames match the target release.
 7. Internal/private implementation details have not leaked into public documentation.
 8. Links between documentation pages resolve using the site's existing route conventions.
@@ -254,6 +301,8 @@ At completion, report:
 - important user-visible changes found
 - documentation files changed
 - schema synchronization result
+- license text comparison result
+- confirmation that `TARGET_TAG` is published on NuGet.org
 - visual CLI reference generation and validation result
 - validation commands run
 - any source changes intentionally not documented because they are internal-only

@@ -55,7 +55,8 @@ site, not an independently versioned npm release. The footer, the cheatsheet, an
 index read this version; do not type a version into a page. This repository is marked `private` and must not
 be published to npm.
 
-For every ALWasp release:
+For every ALWasp release, do all steps together. Do not copy the schema without the page changes
+for the same release:
 
 1. Copy the canonical `schemas/alwasp.schema.json` from the tool repository to
    `public/schema/alwasp.schema.json`.
@@ -66,7 +67,9 @@ For every ALWasp release:
    npm version <tool-version> --no-git-tag-version
    ```
 
-4. Run `npm ci` and `npm run build`.
+4. Run `npm ci` and `npm run build`. The build fails when a page names a CLI option that is not
+   in the release's help snapshots, or when an internal link or anchor does not resolve
+   (`scripts/check-docs.mjs`).
 5. Commit the synchronized site and tag that commit with the same `v<tool-version>` tag used in the
    tool repository.
 
