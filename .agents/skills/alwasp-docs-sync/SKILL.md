@@ -163,6 +163,10 @@ Release notes must describe user-visible behavior, not implementation details.
 
 Do not copy the complete internal changelog verbatim.
 
+Each release has one second-level heading, `## <version> — <date>`, and a bullet list. Do not add
+third-level headings inside a release; use a bold line when an older, longer entry needs a topic
+label. The "On this page" outline then lists one line for each version.
+
 Start an entry with **Migration:** when users must change a script, a configuration file, or a
 pipeline, and with **Behavior change:** when a command that they do not change gives a different
 result. The release notes page tells readers to look for these two markers.
