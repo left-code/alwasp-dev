@@ -179,7 +179,7 @@
         },
         "country": {
           "type": "string",
-          "pattern": "^[A-Za-z]{2,5}$",
+          "pattern": "^[A-Za-z][A-Za-z0-9]{1,4}$",
           "description": "Optional Business Central localization code for Microsoft symbols, e.g. 'DE'. Localized variants are preferred with an unlocalized fallback. Omit or use 'W1' to prefer unlocalized/W1 packages."
         }
       }
